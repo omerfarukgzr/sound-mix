@@ -168,6 +168,9 @@ final class Model: ObservableObject {
 
     func requestAudioPermission() {
         AudioPermission.request { [weak self] _ in
+            // İzin penceresi kapanınca odak başka uygulamaya geçiyor; Ayarlar'ı tekrar öne getir
+            NSApp.activate(ignoringOtherApps: true)
+            NSApp.windows.first { $0.title == "Tab Mixer Ayarları" }?.makeKeyAndOrderFront(nil)
             guard let self else { return }
             self.audioPermission = AudioPermission.status
             self.tapError = false
