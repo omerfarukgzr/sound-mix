@@ -180,7 +180,7 @@ struct MenuContent: View {
             .keyboardShortcut(",", modifiers: .command)
             Spacer()
             FooterButton(action: { NSApp.terminate(nil) }) {
-                Text("Çık")
+                Label("Çık", systemImage: "power")
             }
             .keyboardShortcut("q", modifiers: .command)
         }

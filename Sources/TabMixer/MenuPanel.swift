@@ -59,6 +59,7 @@ final class MenuPanelController: NSObject {
             hosting.topAnchor.constraint(equalTo: effect.topAnchor),
         ])
         panel.contentView = effect
+        panel.onCancel = { [weak self] in self?.closePanel() }
 
         if let button = statusItem.button {
             button.action = #selector(togglePanel)
@@ -76,8 +77,10 @@ final class MenuPanelController: NSObject {
         statusItem.button?.image = MenuBarIcon.image(active: model.isActive)
     }
 
+    private var isOpen = false
+
     @objc private func togglePanel() {
-        panel.isVisible ? closePanel() : openPanel()
+        isOpen ? closePanel() : openPanel()
     }
 
     private func openPanel() {
@@ -89,9 +92,19 @@ final class MenuPanelController: NSObject {
         var x = buttonRect.minX
         x = min(x, screen.maxX - Self.width - 8)
         let frame = NSRect(x: x, y: buttonRect.minY - 6 - height, width: Self.width, height: height)
-        panel.setFrame(frame, display: true)
-        panel.makeKeyAndOrderFront(nil)
+        isOpen = true
         statusItem.button?.highlight(true)
+
+        // Hafifçe yukarıdan kayarak belir
+        panel.alphaValue = 0
+        panel.setFrame(frame.offsetBy(dx: 0, dy: 8), display: true)
+        panel.makeKeyAndOrderFront(nil)
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.18
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            panel.animator().alphaValue = 1
+            panel.animator().setFrame(frame, display: true)
+        }
 
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
             Task { @MainActor in self?.closePanel() }
@@ -99,8 +112,21 @@ final class MenuPanelController: NSObject {
     }
 
     func closePanel() {
-        panel.orderOut(nil)
+        guard isOpen else { return }
+        isOpen = false
         statusItem.button?.highlight(false)
+        // Yumuşakça sol
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            panel.animator().alphaValue = 0
+        } completionHandler: { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self, !self.isOpen else { return }
+                self.panel.orderOut(nil)
+                self.panel.alphaValue = 1
+            }
+        }
         if let monitor = outsideClickMonitor {
             NSEvent.removeMonitor(monitor)
             outsideClickMonitor = nil
@@ -111,7 +137,7 @@ final class MenuPanelController: NSObject {
     private func fit(height: CGFloat) {
         guard height > 0 else { return }
         contentHeight = height
-        guard panel.isVisible else { return }
+        guard isOpen else { return }
         var frame = panel.frame
         guard abs(frame.height - height) > 0.5 else { return }
         frame.origin.y += frame.height - height
@@ -176,5 +202,7 @@ final class MenuPanel: NSPanel {
 
     override var canBecomeKey: Bool { true }
 
-    override func cancelOperation(_ sender: Any?) { orderOut(nil) }
+    var onCancel: () -> Void = {}
+
+    override func cancelOperation(_ sender: Any?) { onCancel() }
 }
