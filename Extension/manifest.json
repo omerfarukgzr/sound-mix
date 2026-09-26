@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Mixer",
+  "version": "1.0.0",
+  "description": "Chrome'daki videoları macOS menü çubuğundaki Tab Mixer uygulamasından oynatır, durdurur ve seslerini ayarlar.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzLrm2gyrRh/MGCkKLYXflY6yrNmchFJwYX1f4NhzCnUZ5JkZSLBi0ce0h0xUtBAkXWd7YWPIdNCdJi+sjOkWPGU8Sr16iwnC9j8hZmg8RynDzdmxHZd5uTogDyk5zTd0CbU2XoL88MY8NC7S4rb41l+EmyCDUmGdpoj0bD6KbyFacmdrlx8Nn+UHhc+Y030ueneLlX3uy8y914Dwn2cBDc1tQOTyzqBm9ZKNUKhgisAZnT5GpXwcVMMZOmX211+SkZ5TkDqfix92Hn4QN/9ltz4Pn3LgoZkGwkp/Vv9BQc4ckOyxl+WaXn6WYlO9PNawGY8hgi0BnXw6rxJEh6LjcwIDAQAB",
+  "permissions": [
+    "nativeMessaging",
+    "tabs",
+    "scripting",
+    "webNavigation",
+    "favicon"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "tracker.js"
+      ],
+      "world": "MAIN",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true,
+      "run_at": "document_start"
+    }
+  ]
+}
