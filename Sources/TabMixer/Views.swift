@@ -88,7 +88,8 @@ struct MenuContent: View {
             Divider().padding(.vertical, 2)
             footer
         }
-        .padding(12)
+        .padding([.top, .horizontal], 12)
+        .padding(.bottom, 5)
         .frame(width: 340)
         .fixedSize(horizontal: false, vertical: true)
         .background(GeometryReader { Color.clear.preference(key: HeightKey.self, value: $0.size.height) })
@@ -199,7 +200,7 @@ struct FooterButton<Label: View>: View {
                 .font(.system(size: 12))
                 .foregroundStyle(hover ? Color.primary : Color.secondary)
                 .padding(.horizontal, 8)
-                .frame(height: 26)
+                .frame(height: 24)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(hover ? 0.1 : 0)))
                 .contentShape(Rectangle())
         }
