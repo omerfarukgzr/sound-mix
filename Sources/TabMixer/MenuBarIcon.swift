@@ -16,13 +16,13 @@ enum MenuBarIcon {
                 track.stroke()
             }
             for row in rows {
-                let r: CGFloat = 2.6
+                let r: CGFloat = 2.0
                 let knobRect = NSRect(x: row.knob - r, y: row.y - r, width: 2 * r, height: 2 * r)
                 // Tutamağın etrafındaki çizgiyi sil, sürgü "kesik" görünsün
                 NSGraphicsContext.current?.compositingOperation = .clear
-                NSBezierPath(ovalIn: knobRect.insetBy(dx: -1.2, dy: -1.2)).fill()
+                NSBezierPath(ovalIn: knobRect.insetBy(dx: -1.0, dy: -1.0)).fill()
                 NSGraphicsContext.current?.compositingOperation = .sourceOver
-                let knob = NSBezierPath(ovalIn: active ? knobRect : knobRect.insetBy(dx: 0.6, dy: 0.6))
+                let knob = NSBezierPath(ovalIn: active ? knobRect : knobRect.insetBy(dx: 0.5, dy: 0.5))
                 NSColor.black.set()
                 if active {
                     knob.fill()
