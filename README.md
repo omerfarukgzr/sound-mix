@@ -64,6 +64,15 @@ Bütün izinlerin durumu ve açıklaması uygulamanın **Ayarlar › İzinler ve
 
 > Uygulama imzasız olduğu için her yeni sürümden sonra macOS Sistem Sesi Kaydı iznini tekrar sorabilir.
 
+## Güvenlik
+
+- Uygulama **internete bağlanmaz**, dışarıdan bağlantı kabul etmez ve yönetici yetkisi istemez.
+- Chrome köprüsü sadece Tab Mixer eklentisinin kimliğiyle konuşur (`allowed_origins`).
+- Uygulama ile köprü arasındaki soket ve durum dosyası sadece senin kullanıcı hesabının erişebileceği bir klasördedir (`~/Library/Caches/tab-mixer`, izin `700`, soket `600`).
+- Web sayfalarından gelen veriler tür ve aralık kontrolünden geçer. Köprüye gelen mesajların boyutu sınırlıdır.
+- Her sürümün `SHA-256` özeti Releases sayfasında yazar. İndirdiğin dosyayı doğrulamak için: `shasum -a 256 TabMixer-x.y.z.zip`
+- Bir güvenlik sorunu bulursan lütfen [Issues](../../issues) üzerinden bildir.
+
 ## Nasıl çalışır
 
 ```

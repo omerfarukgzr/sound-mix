@@ -30,7 +30,7 @@ enum ChromeBridge {
     }
 
     static func icon(for tab: ChromeTab) -> NSImage? {
-        guard let base64 = tab.icon else { return nil }
+        guard let base64 = tab.icon, base64.utf8.count < 256 * 1024 else { return nil }
         if let cached = iconCache[base64] { return cached }
         guard let data = Data(base64Encoded: base64), let image = NSImage(data: data) else { return nil }
         image.size = NSSize(width: 14, height: 14)

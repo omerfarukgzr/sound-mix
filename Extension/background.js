@@ -89,6 +89,9 @@ async function push() {
 }
 
 function onCommand(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.cmd !== 'reload' && !Number.isInteger(msg.tabId)) return;
+  if (msg.cmd === 'volume' && !(typeof msg.value === 'number' && msg.value >= 0 && msg.value <= 1)) return;
   if (msg.cmd === 'toggle') {
     const fs = tabFrames(msg.tabId);
     const playing = fs.filter((f) => f.playing);
@@ -110,7 +113,8 @@ function onCommand(msg) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (!sender.tab) return;
+  // Sadece kendi içerik betiklerimizden gelen mesajlar
+  if (!sender.tab || sender.id !== chrome.runtime.id) return;
   if (msg.type === 'gone') {
     dropFrame(sender.tab.id, sender.frameId);
     push();
