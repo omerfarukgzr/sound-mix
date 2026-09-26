@@ -86,6 +86,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollDisabled(true)
+        .scrollIndicators(.never)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
     }
@@ -141,6 +143,7 @@ struct PermissionRow: View {
     var actionTitle: String?
     var action: () -> Void = {}
     @State private var expanded = false
+    @State private var hover = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -165,7 +168,29 @@ struct PermissionRow: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            DisclosureGroup(isExpanded: $expanded) {
+            Button {
+                expanded.toggle()
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .rotationEffect(.degrees(expanded ? 90 : 0))
+                    Text(expanded ? "Ayrıntıları gizle" : "Ayrıntılar")
+                        .font(.callout)
+                    Spacer()
+                }
+                .foregroundStyle(hover ? Color.primary : Color.secondary)
+                .padding(.horizontal, 8)
+                .frame(height: 26)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color.primary.opacity(hover ? 0.08 : 0)))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onHover { hover = $0 }
+            .padding(.horizontal, -8)
+            .accessibilityLabel(expanded ? "Ayrıntıları gizle" : "Ayrıntıları göster")
+
+            if expanded {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(details, id: \.1) { symbol, text in
                         Label {
@@ -177,9 +202,6 @@ struct PermissionRow: View {
                         .font(.callout)
                     }
                 }
-                .padding(.top, 4)
-            } label: {
-                Text("Ayrıntılar").font(.callout)
             }
         }
         .padding(.vertical, 4)
