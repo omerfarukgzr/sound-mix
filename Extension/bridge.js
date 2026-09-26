@@ -7,7 +7,7 @@
   };
 
   // Sayfa bu olayı taklit edebilir; sadece beklenen alanları, doğru türde al.
-  window.addEventListener('__tabmixer_state2', (e) => {
+  window.addEventListener('__tabmixer_state3', (e) => {
     let data;
     try {
       data = JSON.parse(typeof e.detail === 'string' ? e.detail : '');
@@ -26,8 +26,8 @@
   window.addEventListener('pagehide', () => send({ type: 'gone' }));
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'toggle' || msg.type === 'volume') {
-      window.dispatchEvent(new CustomEvent('__tabmixer_cmd2', { detail: JSON.stringify(msg) }));
+      window.dispatchEvent(new CustomEvent('__tabmixer_cmd3', { detail: JSON.stringify(msg) }));
     }
   });
-  window.dispatchEvent(new CustomEvent('__tabmixer_ping2'));
+  window.dispatchEvent(new CustomEvent('__tabmixer_ping3'));
 })();

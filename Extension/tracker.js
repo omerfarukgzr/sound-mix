@@ -1,7 +1,11 @@
 // Sayfanın kendi dünyasında çalışır: medya öğelerini (DOM'a eklenmemiş olanlar dahil) takip eder.
+// Eklenti güncellenince açık sekmelere yeni sürüm enjekte edilir ama eskisi sayfada çalışmaya
+// devam eder. Yeni sürüm kendini duyurur, eskiler de susar. v2 bu duyuruyu bilmediği için
+// olay adları 3'e çekildi; eski izleyici artık komut almaz.
 (() => {
-  if (window.__tabMixer) return;
-  window.__tabMixer = true;
+  let retired = false;
+  window.dispatchEvent(new CustomEvent('__tabmixer_retire'));
+  window.addEventListener('__tabmixer_retire', () => (retired = true), { once: true });
 
   const media = new Set();
   const audible = new WeakSet(); // kullanıcının sesli dinlediği öğeler
@@ -39,6 +43,7 @@
   }
 
   function report() {
+    if (retired) return;
     let playing = false;
     for (const m of media) {
       if (!m.paused && !m.muted && m.volume > 0) audible.add(m);
@@ -52,7 +57,7 @@
     if (!lastActive) return;
     const m = current();
     const volume = m ? volumeOf(m) : 1;
-    window.dispatchEvent(new CustomEvent('__tabmixer_state2', { detail: JSON.stringify({ playing, lastActive, volume }) }));
+    window.dispatchEvent(new CustomEvent('__tabmixer_state3', { detail: JSON.stringify({ playing, lastActive, volume }) }));
   }
 
   const origPlay = HTMLMediaElement.prototype.play;
@@ -65,9 +70,10 @@
   document.querySelectorAll('video,audio').forEach(track);
   report();
 
-  window.addEventListener('__tabmixer_ping2', report);
+  window.addEventListener('__tabmixer_ping3', report);
 
-  window.addEventListener('__tabmixer_cmd2', (e) => {
+  window.addEventListener('__tabmixer_cmd3', (e) => {
+    if (retired) return;
     const cmd = JSON.parse(e.detail);
     const list = [...media].filter(real);
     if (cmd.type === 'volume') {
