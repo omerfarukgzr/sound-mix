@@ -37,14 +37,15 @@ Menü çubuğunda Tab Mixer ikonu görünür.
 
 ### 2. Chrome eklentisini yükle
 
-Uygulama ilk açılışta eklentiyi `~/Library/Application Support/Tab Mixer/Chrome Extension` klasörüne kopyalar.
+Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir:
 
-1. Menü çubuğundaki ikona tıkla, **Ayarlar… › Chrome eklentisi › Yolu kopyala**'ya bas.
-2. Chrome'da `chrome://extensions` sayfasını aç ve sağ üstten **Geliştirici modu**'nu aç.
-3. **Paketlenmemiş öğe yükle**'ye bas. Açılan pencerede **⌘⇧G**'ye basıp kopyaladığın yolu yapıştır ve klasörü seç.
-4. Açık sekmeleri bir kez yenile.
+1. **"Eklentiler sayfasını aç"** butonuna bas.
+2. Chrome'da sağ üstteki **Geliştirici modu** anahtarını aç.
+3. Yardımcıdaki **"Beni Chrome'a sürükle"** kutusunu Chrome'daki sayfanın üzerine sürükleyip bırak.
 
-Ayarlar'daki durum **Bağlı** olarak görünmelidir.
+Eklenti bağlanınca yardımcı "Hazır!" der. Açık video sekmelerini bir kez yenile.
+
+Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kurulum yardımcısını aç** ile tekrar açabilirsin. Sürükleme çalışmazsa **"klasör yolunu kopyala"** bağlantısına bas, Chrome'da **Paketlenmemiş öğe yükle**'ye bas, **⌘⇧G** ile yolu yapıştırıp klasörü seç.
 
 > Chrome açılışta ara sıra "geliştirici modundaki eklentileri devre dışı bırak" diye hatırlatma gösterebilir. Bunu kapatman yeterli, eklenti çalışmaya devam eder.
 
@@ -92,6 +93,6 @@ scripts/build.sh --install  # ayrıca ~/Applications'a kurar ve başlatır
 
 **Tab Mixer** is a macOS menu bar app that lists every playing video in Chrome (not just one, like Now Playing does), lets you play/pause each one, set per-video volume, and mix per-app volume (Chrome, Discord, …) using Core Audio process taps.
 
-**Install:** download the zip from [Releases](../../releases/latest), move `Tab Mixer.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). Then open *Settings… › Copy path* in the menu, go to `chrome://extensions`, enable *Developer mode*, click *Load unpacked*, press ⌘⇧G, paste the path and select the folder.
+**Install:** download the zip from [Releases](../../releases/latest), move `Tab Mixer.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page.
 
 No data leaves your Mac. Requires macOS 14.4+ and Google Chrome. MIT licensed.

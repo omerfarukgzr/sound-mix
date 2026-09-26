@@ -12,6 +12,7 @@ final class MenuPanelController: NSObject {
     private let panel: MenuPanel
     private var hosting: NSHostingView<AnyView>!
     private var settingsWindow: NSWindow?
+    private var setupWindow: NSWindow?
     private var outsideClickMonitor: Any?
     private var cancellables: Set<AnyCancellable> = []
     private var contentHeight: CGFloat = 0
@@ -72,9 +73,7 @@ final class MenuPanelController: NSObject {
     }
 
     private func updateIcon() {
-        let image = NSImage(systemSymbolName: model.menuIcon, accessibilityDescription: "Tab Mixer")
-        image?.isTemplate = true
-        statusItem.button?.image = image
+        statusItem.button?.image = MenuBarIcon.image(active: model.isActive)
     }
 
     @objc private func togglePanel() {
@@ -123,10 +122,33 @@ final class MenuPanelController: NSObject {
         panel.display()
     }
 
+    func showSetupIfNeeded() {
+        // Köprü birkaç saniye içinde bağlanmazsa kurulum yardımcısını göster
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+            guard let self, !self.model.chromeConnected else { return }
+            self.showSetup()
+        }
+    }
+
+    func showSetup() {
+        closePanel()
+        if setupWindow == nil {
+            let view = SetupView(onDone: { [weak self] in self?.setupWindow?.close() }).environmentObject(model)
+            let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+            window.title = "Tab Mixer Kurulumu"
+            window.styleMask = [.titled, .closable]
+            window.isReleasedWhenClosed = false
+            window.center()
+            setupWindow = window
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        setupWindow?.makeKeyAndOrderFront(nil)
+    }
+
     private func showSettings() {
         closePanel()
         if settingsWindow == nil {
-            let controller = NSHostingController(rootView: SettingsView().environmentObject(model))
+            let controller = NSHostingController(rootView: SettingsView(openSetup: { [weak self] in self?.showSetup() }).environmentObject(model))
             let window = NSWindow(contentViewController: controller)
             window.title = "Tab Mixer Ayarları"
             window.styleMask = [.titled, .closable]

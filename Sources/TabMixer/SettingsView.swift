@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("showOtherApps") private var showOtherApps = true
     @State private var confirmReset = false
     @State private var copied = false
+    var openSetup: () -> Void = {}
 
     var body: some View {
         Form {
@@ -30,6 +31,7 @@ struct SettingsView: View {
                           systemImage: model.chromeConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
                         .foregroundStyle(model.chromeConnected ? .green : .orange)
                 }
+                Button("Kurulum yardımcısını aç") { openSetup() }
                 HStack {
                     Button("Klasörü Finder'da göster") {
                         NSWorkspace.shared.activateFileViewerSelecting([Paths.extensionFolder])
@@ -44,12 +46,8 @@ struct SettingsView: View {
                 Text("Chrome eklentisi")
             } footer: {
                 if !model.chromeConnected {
-                    Text("""
-                    Kurulum: Chrome'da chrome://extensions sayfasını aç, sağ üstten Geliştirici modu'nu aç, \
-                    "Paketlenmemiş öğe yükle"ye bas. Açılan pencerede ⌘⇧G'ye basıp kopyaladığın yolu yapıştır \
-                    ve klasörü seç.
-                    """)
-                    .font(.footnote).foregroundStyle(.secondary)
+                    Text("Eklenti bağlı değil. Kurulum yardımcısı birkaç adımda kurmana yardım eder.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
             }
 

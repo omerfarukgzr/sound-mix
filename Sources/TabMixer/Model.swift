@@ -66,10 +66,8 @@ final class Model: ObservableObject {
 
     // MARK: Menü çubuğu ikonu
 
-    var menuIcon: String {
-        if tabs.contains(where: \.playing) || apps.contains(where: \.isPlaying) { return "play.circle.fill" }
-        if !tabs.isEmpty { return "pause.circle" }
-        return "play.circle"
+    var isActive: Bool {
+        tabs.contains(where: \.playing) || apps.contains(where: \.isPlaying)
     }
 
     // MARK: Sistem sesi
