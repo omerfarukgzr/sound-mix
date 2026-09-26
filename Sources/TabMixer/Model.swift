@@ -23,8 +23,7 @@ final class Model: ObservableObject {
     @Published var apps: [AudioApp] = []
     @Published var appGains: [String: Double] = [:]
     @Published var tapError = false
-    /// Ses Kaydı izni en az bir kez çalıştı mı (tap başarıyla oluşturuldu).
-    @Published var tapWorked = UserDefaults.standard.bool(forKey: "tapWorked")
+    @Published var audioPermission = AudioPermission.status
 
     private var taps: [String: AppVolumeTap] = [:]
     private var lastHeard: [String: Date] = [:]
@@ -62,6 +61,8 @@ final class Model: ObservableObject {
             systemVolumeAvailable = false
         }
         outputName = SystemVolume.deviceName
+        let permission = AudioPermission.status
+        if permission != audioPermission { audioPermission = permission }
 
         if full { refreshApps() }
     }
@@ -156,10 +157,6 @@ final class Model: ObservableObject {
         taps[bundleID] = nil
         taps[bundleID] = AppVolumeTap(name: app.name, processObjects: app.processObjects, gain: linear)
         tapError = taps[bundleID] == nil
-        if !tapError && !tapWorked {
-            tapWorked = true
-            UserDefaults.standard.set(true, forKey: "tapWorked")
-        }
     }
 
     private func outputChanged() {
@@ -167,6 +164,15 @@ final class Model: ObservableObject {
         taps.removeAll()
         for id in ids { applyTap(for: id) }
         refresh(full: false)
+    }
+
+    func requestAudioPermission() {
+        AudioPermission.request { [weak self] _ in
+            guard let self else { return }
+            self.audioPermission = AudioPermission.status
+            self.tapError = false
+            for id in self.appGains.keys { self.applyTap(for: id) }
+        }
     }
 
     func resetGains() {

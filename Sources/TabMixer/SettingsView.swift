@@ -57,16 +57,20 @@ struct SettingsView: View {
                     icon: "waveform",
                     tint: .orange,
                     title: "Sistem Sesi Kaydı",
-                    status: model.tapError ? .missing("Verilmedi") : (model.tapWorked ? .granted("Verildi") : .optional("Henüz istenmedi")),
+                    status: audioStatus,
                     summary: "Bir uygulamanın sesini kısabilmek için o uygulamanın sesini hoparlöre gitmeden önce alır, kısar ve öyle çalar. macOS'ta uygulama sesini ayrı ayarlamanın tek yolu bu.",
                     details: [
                         ("checkmark", "Sadece Mac'ten çıkan sese erişir, sen bir uygulamanın sesini %100'ün altına çektiğinde devreye girer."),
                         ("xmark", "Mikrofonu, kamerayı veya ekranı kapsamaz. Ses kaydedilmez, saklanmaz."),
                         ("info.circle", "İsteğe bağlı. Vermezsen sadece uygulama ses çubukları çalışmaz, videolar ve Mac sesi çalışmaya devam eder."),
                     ],
-                    actionTitle: "Sistem Ayarları…",
+                    actionTitle: audioActionTitle,
                     action: {
-                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!)
+                        if model.audioPermission == .notDetermined {
+                            model.requestAudioPermission()
+                        } else {
+                            AudioPermission.openSystemSettings()
+                        }
                     }
                 )
             } header: {
@@ -90,6 +94,23 @@ struct SettingsView: View {
         .scrollIndicators(.never)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var audioStatus: PermissionStatus {
+        switch model.audioPermission {
+        case .authorized: .granted("Verildi")
+        case .denied: .missing("Reddedildi")
+        case .notDetermined: .optional("Henüz verilmedi")
+        case .unknown: model.tapError ? .missing("Verilmedi") : .optional("Bilinmiyor")
+        }
+    }
+
+    private var audioActionTitle: String? {
+        switch model.audioPermission {
+        case .authorized: nil
+        case .notDetermined: "İzin ver"
+        case .denied, .unknown: "Sistem Ayarları…"
+        }
     }
 
     /// "Chrome %60" gibi, sesi %100'ün altında tutulan uygulamalar.

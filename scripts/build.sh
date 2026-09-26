@@ -42,7 +42,8 @@ echo "Hazır: $APP"
 echo "Yayın dosyası: $ZIP"
 
 if [ "${1:-}" = "--install" ]; then
-  pkill -x TabMixer 2>/dev/null || true
+  # Sadece menü uygulamasını kapat; Chrome'un başlattığı köprü (argümanlı) çalışmaya devam etsin
+  pkill -f "Tab Mixer.app/Contents/MacOS/TabMixer$" 2>/dev/null || true
   rm -rf "$HOME/Applications/Tab Mixer.app"
   cp -R "$APP" "$HOME/Applications/"
   open "$HOME/Applications/Tab Mixer.app"

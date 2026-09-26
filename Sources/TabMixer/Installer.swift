@@ -35,14 +35,26 @@ enum Installer {
         let fm = FileManager.default
         guard let source = Bundle.main.url(forResource: "Extension", withExtension: nil) else { return false }
         let target = Paths.extensionFolder
-        let sourceManifest = try? Data(contentsOf: source.appendingPathComponent("manifest.json"))
-        let targetManifest = try? Data(contentsOf: target.appendingPathComponent("manifest.json"))
-        if sourceManifest != nil, sourceManifest == targetManifest { return false }
+        let sourceFiles = contents(of: source)
+        let targetFiles = contents(of: target)
+        if !sourceFiles.isEmpty, sourceFiles == targetFiles { return false }
 
-        let existed = targetManifest != nil
+        let existed = !targetFiles.isEmpty
         try? fm.createDirectory(at: target.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? fm.removeItem(at: target)
         try? fm.copyItem(at: source, to: target)
         return existed
+    }
+
+    /// Klasördeki bütün dosyalar (göreli yol → içerik); karşılaştırma için.
+    private static func contents(of folder: URL) -> [String: Data] {
+        guard let files = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: nil) else { return [:] }
+        var result: [String: Data] = [:]
+        for case let url as URL in files {
+            if let data = try? Data(contentsOf: url) {
+                result[url.path.replacingOccurrences(of: folder.path, with: "")] = data
+            }
+        }
+        return result
     }
 }

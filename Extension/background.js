@@ -26,12 +26,21 @@ async function favicon(tab) {
   }
 }
 
+let retryDelay = 1000;
+
+// Tab Mixer uygulaması kapanır, güncellenir ya da hiç kurulu değilse bağlantı kopar.
+// Hatayı okuyup (Chrome'un "işlenmemiş hata" uyarısı çıkmasın) artan aralıklarla yeniden dene.
 function connect() {
   port = chrome.runtime.connectNative(HOST);
-  port.onMessage.addListener(onCommand);
+  port.onMessage.addListener((msg) => {
+    retryDelay = 1000;
+    onCommand(msg);
+  });
   port.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
     port = null;
-    setTimeout(connect, 5000);
+    setTimeout(connect, retryDelay);
+    retryDelay = Math.min(retryDelay * 2, 60000);
   });
   push();
 }
