@@ -172,20 +172,45 @@ struct MenuContent: View {
     }
 
     private var footer: some View {
-        HStack {
-            Button {
-                openSettings()
-            } label: {
-                Label("Ayarlar…", systemImage: "gearshape")
-            }
-            .keyboardShortcut(",", modifiers: .command)
-            Spacer()
-            Button("Çık") { NSApp.terminate(nil) }
+        VStack(spacing: 0) {
+            MenuRow(title: "Ayarlar…", systemImage: "gearshape", shortcut: "⌘,", action: openSettings)
+                .keyboardShortcut(",", modifiers: .command)
+            MenuRow(title: "Tab Mixer'dan çık", systemImage: "power", shortcut: "⌘Q") { NSApp.terminate(nil) }
                 .keyboardShortcut("q", modifiers: .command)
         }
+        .padding(.horizontal, -6)
+    }
+}
+
+/// macOS menü öğesi gibi: satırın tamamı tıklanır, üzerine gelince vurgulanır.
+struct MenuRow: View {
+    let title: String
+    let systemImage: String
+    let shortcut: String
+    let action: () -> Void
+    @State private var hover = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 12))
+                    .frame(width: 16)
+                Text(title).font(.system(size: 13))
+                Spacer()
+                Text(shortcut)
+                    .font(.system(size: 12))
+                    .foregroundStyle(hover ? Color.white.opacity(0.8) : Color.secondary)
+            }
+            .foregroundStyle(hover ? Color.white : Color.primary)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 6).fill(hover ? Color.accentColor : .clear))
+            .contentShape(Rectangle())
+        }
         .buttonStyle(.plain)
-        .font(.system(size: 12))
-        .foregroundStyle(.secondary)
+        .onHover { hover = $0 }
     }
 }
 
