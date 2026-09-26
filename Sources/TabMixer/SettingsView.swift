@@ -6,68 +6,80 @@ struct SettingsView: View {
     @AppStorage("recentMinutes") private var recentMinutes = 10
     @AppStorage("showOtherApps") private var showOtherApps = true
     @State private var confirmReset = false
-    @State private var copied = false
     var openSetup: () -> Void = {}
+
+    private var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+    }
 
     var body: some View {
         Form {
-            Section("Genel") {
+            Section {
                 Toggle("Mac açılınca başlat", isOn: Binding(get: { model.launchAtLogin }, set: { model.launchAtLogin = $0 }))
             }
 
             Section("Liste") {
-                Picker("Duraklatılanları göster", selection: $recentMinutes) {
+                Picker("Duraklatılan videolar listede kalsın", selection: $recentMinutes) {
                     Text("5 dakika").tag(5)
                     Text("10 dakika").tag(10)
                     Text("30 dakika").tag(30)
                     Text("1 saat").tag(60)
                 }
-                Toggle("Chrome dışındaki uygulamaları göster", isOn: $showOtherApps)
+                Toggle("Diğer uygulamaları da göster", isOn: $showOtherApps)
             }
 
-            Section {
+            Section("Chrome eklentisi") {
                 LabeledContent("Durum") {
-                    Label(model.chromeConnected ? "Bağlı" : "Bağlı değil",
-                          systemImage: model.chromeConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        .foregroundStyle(model.chromeConnected ? .green : .orange)
-                }
-                Button("Kurulum yardımcısını aç") { openSetup() }
-                HStack {
-                    Button("Klasörü Finder'da göster") {
-                        NSWorkspace.shared.activateFileViewerSelecting([Paths.extensionFolder])
-                    }
-                    Button(copied ? "Kopyalandı" : "Yolu kopyala") {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(Paths.extensionFolder.path, forType: .string)
-                        copied = true
+                    if model.chromeConnected {
+                        Label("Bağlı", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    } else {
+                        HStack(spacing: 10) {
+                            Text("Bağlı değil").foregroundStyle(.secondary)
+                            Button("Kur…", action: openSetup)
+                        }
                     }
                 }
-            } header: {
-                Text("Chrome eklentisi")
-            } footer: {
-                if !model.chromeConnected {
-                    Text("Eklenti bağlı değil. Kurulum yardımcısı birkaç adımda kurmana yardım eder.")
-                        .font(.footnote).foregroundStyle(.secondary)
+            }
+
+            Section("Uygulama sesleri") {
+                LabeledContent("Ses Kaydı izni") {
+                    HStack(spacing: 10) {
+                        if model.tapError {
+                            Text("Verilmedi").foregroundStyle(.orange)
+                        } else {
+                            Text("İlk kullanımda sorulur").foregroundStyle(.secondary)
+                        }
+                        Button("Aç…") {
+                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!)
+                        }
+                    }
+                }
+                LabeledContent("Değiştirilen sesler") {
+                    HStack(spacing: 10) {
+                        Text(changedCount == 0 ? "Yok" : "\(changedCount) uygulama").foregroundStyle(.secondary)
+                        Button("Sıfırla") { confirmReset = true }
+                            .disabled(changedCount == 0)
+                            .confirmationDialog("Bütün uygulama sesleri %100'e dönsün mü?", isPresented: $confirmReset) {
+                                Button("Sıfırla", role: .destructive) { model.resetGains() }
+                            }
+                    }
                 }
             }
 
             Section {
-                Button("Ses Kaydı iznini aç") {
-                    NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!)
+                LabeledContent("Sürüm", value: version)
+                LabeledContent("Kaynak kodu") {
+                    Link("GitHub", destination: URL(string: "https://github.com/omerfarukgzr/tab-mixer")!)
                 }
-                Button("Uygulama seslerini %100'e sıfırla", role: .destructive) { confirmReset = true }
-                    .confirmationDialog("Bütün uygulama sesleri %100'e dönsün mü?", isPresented: $confirmReset) {
-                        Button("Sıfırla", role: .destructive) { model.resetGains() }
-                    }
-            } header: {
-                Text("Uygulama sesleri")
-            } footer: {
-                Text("Uygulama seslerini ayarlamak için macOS'un Ses Kaydı iznini Tab Mixer'a vermen gerekiyor.")
-                    .font(.footnote).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
         .frame(width: 440)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var changedCount: Int {
+        model.appGains.values.filter { $0 < 0.999 }.count
     }
 }
