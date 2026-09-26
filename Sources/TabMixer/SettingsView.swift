@@ -26,36 +26,7 @@ struct SettingsView: View {
                     Text("1 saat").tag(60)
                 }
                 Toggle("Diğer uygulamaları da göster", isOn: $showOtherApps)
-            }
-
-            Section("Chrome eklentisi") {
-                LabeledContent("Durum") {
-                    if model.chromeConnected {
-                        Label("Bağlı", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    } else {
-                        HStack(spacing: 10) {
-                            Text("Bağlı değil").foregroundStyle(.secondary)
-                            Button("Kur…", action: openSetup)
-                        }
-                    }
-                }
-            }
-
-            Section("Uygulama sesleri") {
-                LabeledContent("Ses Kaydı izni") {
-                    HStack(spacing: 10) {
-                        if model.tapError {
-                            Text("Verilmedi").foregroundStyle(.orange)
-                        } else {
-                            Text("İlk kullanımda sorulur").foregroundStyle(.secondary)
-                        }
-                        Button("Aç…") {
-                            NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!)
-                        }
-                    }
-                }
-                LabeledContent("Değiştirilen sesler") {
+                LabeledContent("Değiştirilen uygulama sesleri") {
                     HStack(spacing: 10) {
                         Text(changedCount == 0 ? "Yok" : "\(changedCount) uygulama").foregroundStyle(.secondary)
                         Button("Sıfırla") { confirmReset = true }
@@ -68,6 +39,46 @@ struct SettingsView: View {
             }
 
             Section {
+                PermissionRow(
+                    icon: "puzzlepiece.extension.fill",
+                    tint: .blue,
+                    title: "Chrome eklentisi",
+                    status: model.chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil"),
+                    summary: "Chrome'daki videoları bulur, hangisinin çaldığını ve ses seviyesini Tab Mixer'a bildirir. Menüden verdiğin oynat, durdur ve ses komutlarını videoya iletir.",
+                    details: [
+                        ("checkmark", "Sadece sayfadaki video ve ses oynatıcılarına bakar."),
+                        ("xmark", "Sayfa içeriğini, şifreleri, formları veya geçmişini okumaz."),
+                        ("info.circle", "Chrome'un \"tüm sitelerdeki verileri okuma\" uyarısı, videoların çoğu zaman başka sitelerin içinde (iframe) oynamasından kaynaklanır."),
+                    ],
+                    actionTitle: model.chromeConnected ? nil : "Kur…",
+                    action: openSetup
+                )
+                PermissionRow(
+                    icon: "waveform",
+                    tint: .orange,
+                    title: "Sistem Sesi Kaydı",
+                    status: model.tapError ? .missing("Verilmedi") : (model.tapWorked ? .granted("Verildi") : .optional("Henüz istenmedi")),
+                    summary: "Bir uygulamanın sesini kısabilmek için o uygulamanın sesini hoparlöre gitmeden önce alır, kısar ve öyle çalar. macOS'ta uygulama sesini ayrı ayarlamanın tek yolu bu.",
+                    details: [
+                        ("checkmark", "Sadece Mac'ten çıkan sese erişir, sen bir uygulamanın sesini %100'ün altına çektiğinde devreye girer."),
+                        ("xmark", "Mikrofonu, kamerayı veya ekranı kapsamaz. Ses kaydedilmez, saklanmaz."),
+                        ("info.circle", "İsteğe bağlı. Vermezsen sadece uygulama ses çubukları çalışmaz, videolar ve Mac sesi çalışmaya devam eder."),
+                    ],
+                    actionTitle: "Sistem Ayarları…",
+                    action: {
+                        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AudioCapture")!)
+                    }
+                )
+            } header: {
+                Text("İzinler ve gizlilik")
+            } footer: {
+                Label("Tab Mixer internete bağlanmaz ve veri toplamaz. Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez.",
+                      systemImage: "lock.shield")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 LabeledContent("Sürüm", value: version)
                 LabeledContent("Kaynak kodu") {
                     Link("GitHub", destination: URL(string: "https://github.com/omerfarukgzr/tab-mixer")!)
@@ -75,11 +86,91 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 440)
+        .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
     }
 
     private var changedCount: Int {
         model.appGains.values.filter { $0 < 0.999 }.count
+    }
+}
+
+enum PermissionStatus {
+    case granted(String), missing(String), optional(String)
+
+    var text: String {
+        switch self { case .granted(let t), .missing(let t), .optional(let t): t }
+    }
+
+    var color: Color {
+        switch self {
+        case .granted: .green
+        case .missing: .orange
+        case .optional: .secondary
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .granted: "checkmark.circle.fill"
+        case .missing: "exclamationmark.circle.fill"
+        case .optional: "circle.dashed"
+        }
+    }
+}
+
+/// Bir iznin adı, durumu, ne işe yaradığı ve ayrıntıları.
+struct PermissionRow: View {
+    let icon: String
+    let tint: Color
+    let title: String
+    let status: PermissionStatus
+    let summary: String
+    let details: [(String, String)]
+    var actionTitle: String?
+    var action: () -> Void = {}
+    @State private var expanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 26, height: 26)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(tint))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title).font(.body.weight(.medium))
+                    Label(status.text, systemImage: status.symbol)
+                        .font(.caption)
+                        .foregroundStyle(status.color)
+                }
+                Spacer()
+                if let actionTitle {
+                    Button(actionTitle, action: action)
+                }
+            }
+            Text(summary)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            DisclosureGroup(isExpanded: $expanded) {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(details, id: \.1) { symbol, text in
+                        Label {
+                            Text(text).fixedSize(horizontal: false, vertical: true)
+                        } icon: {
+                            Image(systemName: symbol)
+                                .foregroundStyle(symbol == "checkmark" ? .green : symbol == "xmark" ? .red : .secondary)
+                        }
+                        .font(.callout)
+                    }
+                }
+                .padding(.top, 4)
+            } label: {
+                Text("Ayrıntılar").font(.callout)
+            }
+        }
+        .padding(.vertical, 4)
     }
 }

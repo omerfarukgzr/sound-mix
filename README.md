@@ -49,9 +49,20 @@ Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kurulum yardımcıs
 
 > Chrome açılışta ara sıra "geliştirici modundaki eklentileri devre dışı bırak" diye hatırlatma gösterebilir. Bunu kapatman yeterli, eklenti çalışmaya devam eder.
 
-### 3. (İsteğe bağlı) Uygulama sesleri için izin
+## İzinler ve gizlilik
 
-Chrome veya başka bir uygulamanın ses çubuğunu ilk kez %100'ün altına çektiğinde macOS **Ses Kaydı** izni ister. İzin vermezsen bu çubuklar çalışmaz, geri kalan her şey çalışır. Sonradan **Sistem Ayarları › Gizlilik ve Güvenlik › Ses Kaydı** bölümünden açabilirsin.
+Tab Mixer **internete bağlanmaz ve veri toplamaz.** Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez. Kurulumda karşına çıkabilecek her şey şunlar:
+
+| Ne | Ne zaman | Neden |
+|---|---|---|
+| "Tanınmayan geliştirici" uyarısı | İlk açılışta | Uygulama ücretli Apple sertifikasıyla imzalanmadı. Bir izin değil, bir kez "Yine de Aç" demen yeterli. |
+| **Chrome eklentisi** izinleri | Eklenti kurulurken | Sayfalardaki video oynatıcılarını bulmak, sekme adını göstermek ve uygulamayla konuşmak için. Videolar çoğu zaman başka sitelerin içinde (iframe) oynadığı için Chrome bunu "tüm sitelerdeki verileri okuma" olarak gösterir. Eklenti sadece video ve ses öğelerine bakar. Sayfa içeriğini, şifreleri veya formları okumaz. |
+| **Yalnızca Sistem Sesi Kaydı** *(isteğe bağlı)* | Bir uygulamanın sesini ilk kez %100'ün altına çektiğinde | macOS'ta bir uygulamanın sesini ayrı kısmanın tek yolu, sesini hoparlöre gitmeden önce alıp kısarak çalmak. Sadece Mac'ten çıkan sese erişir. Ses kaydedilmez, saklanmaz. Vermezsen sadece uygulama ses çubukları çalışmaz. |
+| Giriş öğesi bildirimi *(isteğe bağlı)* | "Mac açılınca başlat"ı açınca | macOS'un standart bildirimi. |
+
+Bütün izinlerin durumu ve açıklaması uygulamanın **Ayarlar › İzinler ve gizlilik** bölümünde de görünür.
+
+> Uygulama imzasız olduğu için her yeni sürümden sonra macOS Sistem Sesi Kaydı iznini tekrar sorabilir.
 
 ## Nasıl çalışır
 

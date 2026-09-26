@@ -23,6 +23,8 @@ final class Model: ObservableObject {
     @Published var apps: [AudioApp] = []
     @Published var appGains: [String: Double] = [:]
     @Published var tapError = false
+    /// Ses Kaydı izni en az bir kez çalıştı mı (tap başarıyla oluşturuldu).
+    @Published var tapWorked = UserDefaults.standard.bool(forKey: "tapWorked")
 
     private var taps: [String: AppVolumeTap] = [:]
     private var lastHeard: [String: Date] = [:]
@@ -154,6 +156,10 @@ final class Model: ObservableObject {
         taps[bundleID] = nil
         taps[bundleID] = AppVolumeTap(name: app.name, processObjects: app.processObjects, gain: linear)
         tapError = taps[bundleID] == nil
+        if !tapError && !tapWorked {
+            tapWorked = true
+            UserDefaults.standard.set(true, forKey: "tapWorked")
+        }
     }
 
     private func outputChanged() {
