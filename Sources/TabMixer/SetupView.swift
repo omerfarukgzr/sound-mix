@@ -104,7 +104,9 @@ private struct ExtensionDragTile: View {
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 10).strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5, 4])).foregroundStyle(.secondary))
             .contentShape(Rectangle())
-            .onDrag { NSItemProvider(contentsOf: Paths.extensionFolder) ?? NSItemProvider() }
+            // İçeriği değil yolu ver: contentsOf, klasörü geçici bir sürükleme önbelleğine kopyalıyor,
+            // Chrome eklentiyi oradan yükleyince güncellemeler hiç ulaşmıyordu.
+            .onDrag { NSItemProvider(object: Paths.extensionFolder as NSURL) }
             .help("Chrome'un eklentiler sayfasına sürükle")
 
             Button(copied ? "Yol kopyalandı" : "Sürükleme olmazsa: klasör yolunu kopyala") {

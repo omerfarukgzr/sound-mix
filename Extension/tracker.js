@@ -32,6 +32,17 @@
     return p && typeof p.setVolume === 'function' && typeof p.getVolume === 'function' ? p : null;
   }
 
+  // setVolume sesi YouTube'un kayıtlarına yazmıyor; oynatıcı ara sıra (format değişimi,
+  // reklam vb.) sesi bu kayıtlardan geri yüklüyor ve eski değer dönüyor. Kendi ayarı gibi kaydet.
+  function saveYtVolume(volume, muted) {
+    const now = Date.now();
+    const data = JSON.stringify({ volume, muted });
+    try {
+      localStorage.setItem('yt-player-volume', JSON.stringify({ data, expiration: now + 30 * 86400000, creation: now }));
+      sessionStorage.setItem('yt-player-volume', JSON.stringify({ data, creation: now }));
+    } catch {}
+  }
+
   function volumeOf(m) {
     const p = ytPlayer(m);
     if (p) return p.isMuted?.() ? 0 : p.getVolume() / 100;
@@ -92,6 +103,7 @@
         p.setVolume(Math.round(value * 100));
         if (value > 0 && p.isMuted?.()) p.unMute?.();
       }
+      if (players.size) saveYtVolume(Math.round(value * 100), value === 0);
       return;
     }
     const playing = list.filter(isPlaying);
