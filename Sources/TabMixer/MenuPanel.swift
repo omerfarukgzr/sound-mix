@@ -95,15 +95,13 @@ final class MenuPanelController: NSObject {
         isOpen = true
         statusItem.button?.highlight(true)
 
-        // Hafifçe yukarıdan kayarak belir
-        panel.alphaValue = 0
-        panel.setFrame(frame.offsetBy(dx: 0, dy: 8), display: true)
+        panel.setFrame(frame, display: true)
+        panel.hasShadow = false
         panel.makeKeyAndOrderFront(nil)
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.18
-            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1
-            panel.animator().setFrame(frame, display: true)
+        animateContent(show: true) { [weak self] in
+            guard let self, self.isOpen else { return }
+            self.panel.hasShadow = true
+            self.panel.invalidateShadow()
         }
 
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
@@ -115,22 +113,43 @@ final class MenuPanelController: NSObject {
         guard isOpen else { return }
         isOpen = false
         statusItem.button?.highlight(false)
-        // Yumuşakça sol
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.12
-            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            panel.animator().alphaValue = 0
-        } completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
-                guard let self, !self.isOpen else { return }
-                self.panel.orderOut(nil)
-                self.panel.alphaValue = 1
-            }
+        panel.hasShadow = false
+        animateContent(show: false) { [weak self] in
+            guard let self, !self.isOpen else { return }
+            self.panel.orderOut(nil)
         }
         if let monitor = outsideClickMonitor {
             NSEvent.removeMonitor(monitor)
             outsideClickMonitor = nil
         }
+    }
+
+    /// Menü içeriğini katman düzeyinde soldurup kaydırır. Buzlu cam arka plan pencere
+    /// şeffaflığı animasyonunu yok saydığı için pencereyi değil içeriği canlandırıyoruz.
+    private func animateContent(show: Bool, completion: @escaping @MainActor () -> Void) {
+        guard let layer = panel.contentView?.layer else { completion(); return }
+        let lifted = CATransform3DMakeTranslation(0, 8, 0)
+        let fromOpacity: Float = show ? 0 : 1
+        let toOpacity: Float = show ? 1 : 0
+        let fromTransform = show ? lifted : CATransform3DIdentity
+        let toTransform = show ? CATransform3DIdentity : lifted
+
+        CATransaction.begin()
+        CATransaction.setCompletionBlock { MainActor.assumeIsolated { completion() } }
+        let opacity = CABasicAnimation(keyPath: "opacity")
+        opacity.fromValue = fromOpacity
+        opacity.toValue = toOpacity
+        let move = CABasicAnimation(keyPath: "transform")
+        move.fromValue = fromTransform
+        move.toValue = toTransform
+        let group = CAAnimationGroup()
+        group.animations = [opacity, move]
+        group.duration = show ? 0.2 : 0.16
+        group.timingFunction = CAMediaTimingFunction(name: show ? .easeOut : .easeIn)
+        layer.opacity = toOpacity
+        layer.transform = toTransform
+        layer.add(group, forKey: "menuTransition")
+        CATransaction.commit()
     }
 
     /// İçerik yüksekliği değişince paneli üst kenarı sabit kalacak şekilde yeniden boyutlandır.

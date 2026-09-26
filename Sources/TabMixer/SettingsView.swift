@@ -26,15 +26,15 @@ struct SettingsView: View {
                     Text("1 saat").tag(60)
                 }
                 Toggle("Diğer uygulamaları da göster", isOn: $showOtherApps)
-                LabeledContent("Değiştirilen uygulama sesleri") {
-                    HStack(spacing: 10) {
-                        Text(changedCount == 0 ? "Yok" : "\(changedCount) uygulama").foregroundStyle(.secondary)
-                        Button("Sıfırla") { confirmReset = true }
-                            .disabled(changedCount == 0)
-                            .confirmationDialog("Bütün uygulama sesleri %100'e dönsün mü?", isPresented: $confirmReset) {
-                                Button("Sıfırla", role: .destructive) { model.resetGains() }
-                            }
-                    }
+                LabeledContent {
+                    Button("Hepsini %100 yap") { confirmReset = true }
+                        .disabled(loweredApps.isEmpty)
+                        .confirmationDialog("Bütün uygulama sesleri %100'e dönsün mü?", isPresented: $confirmReset) {
+                            Button("%100 yap", role: .destructive) { model.resetGains() }
+                        }
+                } label: {
+                    Text("Sesi kısılan uygulamalar")
+                    Text(loweredApps.isEmpty ? "Yok. Menüden bir uygulamanın sesini kısarsan burada görünür ve hatırlanır." : loweredApps.joined(separator: ", "))
                 }
             }
 
@@ -90,8 +90,19 @@ struct SettingsView: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var changedCount: Int {
-        model.appGains.values.filter { $0 < 0.999 }.count
+    /// "Chrome %60" gibi, sesi %100'ün altında tutulan uygulamalar.
+    private var loweredApps: [String] {
+        model.appGains
+            .filter { $0.value < 0.999 }
+            .sorted { $0.key < $1.key }
+            .map { id, gain in "\(appName(id)) %\(Int((gain * 100).rounded()))" }
+    }
+
+    private func appName(_ bundleID: String) -> String {
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
+            return FileManager.default.displayName(atPath: url.path).replacingOccurrences(of: ".app", with: "")
+        }
+        return bundleID
     }
 }
 
