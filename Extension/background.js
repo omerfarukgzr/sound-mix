@@ -63,7 +63,29 @@ async function prune() {
   }
 }
 
+// Durum mesajları art arda gelir (ses çubuğu sürüklenirken onlarca kez). push() eşzamanlı
+// çalışırsa eski bir hesap yenisinden sonra gönderilip uygulamadaki sesi geri alabilir.
+// Bu yüzden gönderimler sıraya girer ve en son durum her zaman en son gönderilir.
+let pushing = false;
+let pushAgain = false;
+
 async function push() {
+  if (pushing) {
+    pushAgain = true;
+    return;
+  }
+  pushing = true;
+  try {
+    do {
+      pushAgain = false;
+      await pushOnce();
+    } while (pushAgain);
+  } finally {
+    pushing = false;
+  }
+}
+
+async function pushOnce() {
   if (!port) return;
   await prune();
   const byTab = new Map();

@@ -20,6 +20,20 @@
     for (const e of ['playing', 'pause', 'ended', 'volumechange', 'emptied']) m.addEventListener(e, report);
   }
 
+  // YouTube oynatıcısı sesi kendi hafızasında tutar ve öğeye normalizasyonla uygular.
+  // Öğeye doğrudan yazılan ses bir sonraki videoda/reklamda eskiye döner, bu yüzden
+  // YouTube'da sesi oynatıcının kendi API'siyle okuyup yazıyoruz.
+  function ytPlayer(m) {
+    const p = m.closest?.('.html5-video-player');
+    return p && typeof p.setVolume === 'function' && typeof p.getVolume === 'function' ? p : null;
+  }
+
+  function volumeOf(m) {
+    const p = ytPlayer(m);
+    if (p) return p.isMuted?.() ? 0 : p.getVolume() / 100;
+    return m.muted ? 0 : m.volume;
+  }
+
   function current() {
     return [...media].filter(real).sort((a, b) => (lastPlayed.get(b) || 0) - (lastPlayed.get(a) || 0))[0];
   }
@@ -37,7 +51,7 @@
     wasPlaying = playing;
     if (!lastActive) return;
     const m = current();
-    const volume = m ? (m.muted ? 0 : m.volume) : 1;
+    const volume = m ? volumeOf(m) : 1;
     window.dispatchEvent(new CustomEvent('__tabmixer_state2', { detail: JSON.stringify({ playing, lastActive, volume }) }));
   }
 
@@ -57,9 +71,20 @@
     const cmd = JSON.parse(e.detail);
     const list = [...media].filter(real);
     if (cmd.type === 'volume') {
+      const value = Math.min(1, Math.max(0, cmd.value));
+      const players = new Set();
       for (const m of list) {
-        m.volume = Math.min(1, Math.max(0, cmd.value));
-        if (cmd.value > 0 && m.muted) m.muted = false;
+        const p = ytPlayer(m);
+        if (p) {
+          players.add(p);
+          continue;
+        }
+        m.volume = value;
+        if (value > 0 && m.muted) m.muted = false;
+      }
+      for (const p of players) {
+        p.setVolume(Math.round(value * 100));
+        if (value > 0 && p.isMuted?.()) p.unMute?.();
       }
       return;
     }
