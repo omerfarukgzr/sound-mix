@@ -40,25 +40,8 @@ final class MenuPanelController: NSObject {
             }
         }
 
-        let effect = NSVisualEffectView()
-        effect.material = .menu
-        effect.state = .active
-        effect.blendingMode = .behindWindow
-        effect.wantsLayer = true
-        effect.layer?.cornerRadius = Self.cornerRadius
-        effect.layer?.cornerCurve = .continuous
-        effect.layer?.masksToBounds = true
-        effect.layer?.borderWidth = 0.5
-        effect.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
-
         hosting.translatesAutoresizingMaskIntoConstraints = false
-        effect.addSubview(hosting)
-        NSLayoutConstraint.activate([
-            hosting.leadingAnchor.constraint(equalTo: effect.leadingAnchor),
-            hosting.trailingAnchor.constraint(equalTo: effect.trailingAnchor),
-            hosting.topAnchor.constraint(equalTo: effect.topAnchor),
-        ])
-        panel.contentView = effect
+        panel.contentView = Self.makeBackground(containing: hosting)
         panel.onCancel = { [weak self] in self?.closePanel() }
 
         if let button = statusItem.button {
@@ -71,6 +54,43 @@ final class MenuPanelController: NSObject {
             .sink { [weak self] _, _ in self?.updateIcon() }
             .store(in: &cancellables)
         updateIcon()
+    }
+
+    /// macOS 26 ve sonrasında sistem menüleriyle aynı Liquid Glass. Saydamlık oranını sistem
+    /// belirler; kullanıcının "Liquid Glass" ve "Saydamlığı azalt" ayarlarına kendisi uyar.
+    /// Daha eski sürümlerde menü materyalli buzlu cam kullanılır.
+    private static func makeBackground(containing hosting: NSView) -> NSView {
+        let container = NSView()
+        container.autoresizingMask = [.width, .height]
+        container.addSubview(hosting)
+        NSLayoutConstraint.activate([
+            hosting.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            hosting.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            hosting.topAnchor.constraint(equalTo: container.topAnchor),
+        ])
+
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView()
+            glass.style = .regular
+            glass.cornerRadius = cornerRadius
+            glass.contentView = container
+            glass.wantsLayer = true
+            return glass
+        }
+
+        let effect = NSVisualEffectView()
+        effect.material = .menu
+        effect.state = .active
+        effect.blendingMode = .behindWindow
+        effect.wantsLayer = true
+        effect.layer?.cornerRadius = cornerRadius
+        effect.layer?.cornerCurve = .continuous
+        effect.layer?.masksToBounds = true
+        effect.layer?.borderWidth = 0.5
+        effect.layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
+        container.frame = effect.bounds
+        effect.addSubview(container)
+        return effect
     }
 
     private func updateIcon() {
