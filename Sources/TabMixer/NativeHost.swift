@@ -12,24 +12,34 @@ enum NativeHost {
         try? FileManager.default.createDirectory(at: Paths.shared, withIntermediateDirectories: true,
                                                  attributes: [.posixPermissions: 0o700])
         try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: Paths.shared.path)
-        Thread.detachNewThread { serveCommands() }
+        let owned = openSocket()
+        if let owned { Thread.detachNewThread { serveCommands(owned.fd) } }
 
         let input = FileHandle.standardInput
-        while true {
-            let header = input.readData(ofLength: 4)
-            guard header.count == 4 else { break }
-            let length = Int(header.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }.littleEndian)
-            guard length <= maxMessage else { break }
-            let body = input.readData(ofLength: length)
-            guard body.count == length else { break }
-            if let message = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
-               message["type"] as? String == "state", let tabs = message["tabs"] {
-                writeState(tabs)
-            }
+        // Run loop olmadığı için autorelease pool kendiliğinden boşalmıyor; her mesajda elle boşaltıyoruz.
+        while autoreleasepool(invoking: { readMessage(from: input) }) {}
+        // Eklenti yeniden yüklenince yeni köprü soketi çoktan devralmış olabilir; o zaman onun dosyalarına dokunma
+        if let owned, socketID() == owned.id {
+            writeState([])
+            unlink(Paths.bridgePID)
+            unlink(Paths.socket)
         }
-        writeState([])
-        unlink(Paths.socket)
         exit(0)
+    }
+
+    /// Bir mesaj okur; akış bittiyse veya mesaj geçersizse false döner.
+    private static func readMessage(from input: FileHandle) -> Bool {
+        let header = input.readData(ofLength: 4)
+        guard header.count == 4 else { return false }
+        let length = Int(header.withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }.littleEndian)
+        guard length <= maxMessage else { return false }
+        let body = input.readData(ofLength: length)
+        guard body.count == length else { return false }
+        if let message = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+           message["type"] as? String == "state", let tabs = message["tabs"] {
+            writeState(tabs)
+        }
+        return true
     }
 
     private static func writeState(_ tabs: Any) {
@@ -45,19 +55,41 @@ enum NativeHost {
         FileHandle.standardOutput.write(data)
     }
 
-    private static func serveCommands() {
+    /// Soket dosyasının kimliği (cihaz + inode); başka bir köprü yeniden bağlarsa değişir.
+    private struct SocketID: Equatable { let dev: dev_t; let ino: ino_t }
+
+    private static func socketID() -> SocketID? {
+        var info = stat()
+        guard stat(Paths.socket, &info) == 0 else { return nil }
+        return SocketID(dev: info.st_dev, ino: info.st_ino)
+    }
+
+    /// Komut soketini açar (eskisini devralır) ve pid dosyasını yazar.
+    private static func openSocket() -> (fd: Int32, id: SocketID)? {
         unlink(Paths.socket)
         let server = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard server >= 0, var addr = unixAddress(Paths.socket) else { return }
+        guard server >= 0, var addr = unixAddress(Paths.socket) else { return nil }
         let bound = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(server, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
-        guard bound == 0, listen(server, 8) == 0 else { return }
+        guard bound == 0, listen(server, 8) == 0, let id = socketID() else { close(server); return nil }
         chmod(Paths.socket, 0o600)
+        try? "\(getpid())".write(toFile: Paths.bridgePID, atomically: true, encoding: .utf8)
+        return (server, id)
+    }
 
-        while true {
+    private static func serveCommands(_ server: Int32) {
+        while true { autoreleasepool {
             let client = accept(server, nil, nil)
-            guard client >= 0 else { continue }
+            guard client >= 0 else {
+                // EMFILE gibi kalıcı hatalarda döngü işlemciyi yakmasın
+                if errno != EINTR { usleep(100_000) }
+                return
+            }
+            defer { close(client) }
+            // Bağlanıp hiçbir şey göndermeyen istemci diğer komutları sonsuza kadar bekletmesin
+            var timeout = timeval(tv_sec: 1, tv_usec: 0)
+            setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
             var data = Data()
             var buffer = [UInt8](repeating: 0, count: 4096)
             while data.count <= maxCommand {
@@ -65,10 +97,9 @@ enum NativeHost {
                 if count <= 0 { break }
                 data.append(buffer, count: count)
             }
-            guard data.count <= maxCommand else { close(client); continue }
-            close(client)
+            guard data.count <= maxCommand else { return }
             // Sadece geçerli JSON'u ilet
             if (try? JSONSerialization.jsonObject(with: data)) != nil { send(data) }
-        }
+        } }
     }
 }

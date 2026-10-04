@@ -51,7 +51,7 @@ Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kurulum yardımcıs
 
 ## İzinler ve gizlilik
 
-Tab Mixer **internete bağlanmaz ve veri toplamaz.** Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez. Kurulumda karşına çıkabilecek her şey şunlar:
+Tab Mixer **veri toplamaz.** Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez. Kurulumda karşına çıkabilecek her şey şunlar:
 
 | Ne | Ne zaman | Neden |
 |---|---|---|
@@ -66,7 +66,7 @@ Bütün izinlerin durumu ve açıklaması uygulamanın **Ayarlar › İzinler ve
 
 ## Güvenlik
 
-- Uygulama **internete bağlanmaz**, dışarıdan bağlantı kabul etmez ve yönetici yetkisi istemez.
+- Uygulama dışarıdan bağlantı kabul etmez ve yönetici yetkisi istemez.
 - Chrome köprüsü sadece Tab Mixer eklentisinin kimliğiyle konuşur (`allowed_origins`).
 - Uygulama ile köprü arasındaki soket ve durum dosyası sadece senin kullanıcı hesabının erişebileceği bir klasördedir (`~/Library/Caches/tab-mixer`, izin `700`, soket `600`).
 - Web sayfalarından gelen veriler tür ve aralık kontrolünden geçer. Köprüye gelen mesajların boyutu sınırlıdır.

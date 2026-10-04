@@ -7,7 +7,10 @@
   window.dispatchEvent(new CustomEvent('__tabmixer_retire'));
   window.addEventListener('__tabmixer_retire', () => (retired = true), { once: true });
 
-  const media = new Set();
+  // Öğeleri zayıf referansla tut: sayfadan atılan öğeler bellekten silinebilsin. Çalan öğeyi
+  // tarayıcı zaten canlı tutar, DOM'a eklenmemiş olsa bile kaybolmaz.
+  const media = new Set(); // WeakRef<HTMLMediaElement>
+  const tracked = new WeakSet();
   const audible = new WeakSet(); // kullanıcının sesli dinlediği öğeler
   const lastPlayed = new WeakMap();
   let wasPlaying = false;
@@ -18,9 +21,21 @@
   const real = (m) => audible.has(m) && (m.duration > 5 || m.duration === Infinity);
   const isPlaying = (m) => !m.paused && !m.ended && real(m);
 
+  // Canlı öğeler; silinmiş olanların referanslarını da temizler.
+  function live() {
+    const list = [];
+    for (const ref of media) {
+      const m = ref.deref();
+      if (m) list.push(m);
+      else media.delete(ref);
+    }
+    return list;
+  }
+
   function track(m) {
-    if (media.has(m)) return;
-    media.add(m);
+    if (tracked.has(m)) return;
+    tracked.add(m);
+    media.add(new WeakRef(m));
     for (const e of ['playing', 'pause', 'ended', 'volumechange', 'emptied']) m.addEventListener(e, report);
   }
 
@@ -50,13 +65,13 @@
   }
 
   function current() {
-    return [...media].filter(real).sort((a, b) => (lastPlayed.get(b) || 0) - (lastPlayed.get(a) || 0))[0];
+    return live().filter(real).sort((a, b) => (lastPlayed.get(b) || 0) - (lastPlayed.get(a) || 0))[0];
   }
 
   function report() {
     if (retired) return;
     let playing = false;
-    for (const m of media) {
+    for (const m of live()) {
       if (!m.paused && !m.muted && m.volume > 0) audible.add(m);
       if (isPlaying(m)) {
         playing = true;
@@ -71,11 +86,16 @@
     window.dispatchEvent(new CustomEvent('__tabmixer_state3', { detail: JSON.stringify({ playing, lastActive, volume }) }));
   }
 
+  // Sayfa play'in değiştirildiğini kolayca anlamasın: adı, uzunluğu ve toString'i aslı gibi.
   const origPlay = HTMLMediaElement.prototype.play;
-  HTMLMediaElement.prototype.play = function (...args) {
-    track(this);
-    return origPlay.apply(this, args);
-  };
+  const play = {
+    play() {
+      track(this);
+      return origPlay.apply(this, arguments);
+    },
+  }.play;
+  Object.defineProperty(play, 'toString', { value: origPlay.toString.bind(origPlay), writable: true, configurable: true });
+  HTMLMediaElement.prototype.play = play;
   document.addEventListener('play', (e) => e.target instanceof HTMLMediaElement && track(e.target), true);
   document.addEventListener('playing', (e) => e.target instanceof HTMLMediaElement && (track(e.target), report()), true);
   document.querySelectorAll('video,audio').forEach(track);
@@ -85,8 +105,15 @@
 
   window.addEventListener('__tabmixer_cmd3', (e) => {
     if (retired) return;
-    const cmd = JSON.parse(e.detail);
-    const list = [...media].filter(real);
+    // Sayfa bu olayı da taklit edebilir; bozuk ya da beklenmeyen komutu yok say.
+    let cmd;
+    try {
+      cmd = JSON.parse(typeof e.detail === 'string' ? e.detail : '');
+    } catch {
+      return;
+    }
+    if (cmd?.type !== 'toggle' && !(cmd?.type === 'volume' && Number.isFinite(cmd.value))) return;
+    const list = live().filter(real);
     if (cmd.type === 'volume') {
       const value = Math.min(1, Math.max(0, cmd.value));
       const players = new Set();

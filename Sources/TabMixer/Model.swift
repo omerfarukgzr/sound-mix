@@ -13,6 +13,12 @@ final class Model: ObservableObject {
         return TimeInterval(minutes * 60)
     }
 
+    /// Ayarlanan süre okunur biçimde: "10 dakikada", "1 saatte".
+    var recentWindowText: String {
+        let minutes = Int(recentWindow / 60)
+        return minutes % 60 == 0 ? "\(minutes / 60) saatte" : "\(minutes) dakikada"
+    }
+
     var showOtherApps: Bool { UserDefaults.standard.object(forKey: "showOtherApps") as? Bool ?? true }
 
     @Published var systemVolume: Double = 0
@@ -24,12 +30,16 @@ final class Model: ObservableObject {
     @Published var appGains: [String: Double] = [:]
     @Published var tapError = false
     @Published var audioPermission = AudioPermission.status
+    @Published var update: AvailableUpdate? = UpdateChecker.stored
 
     private var taps: [String: AppVolumeTap] = [:]
     private var lastHeard: [String: Date] = [:]
     private var localVideoVolume: [Int: (value: Double, at: Date)] = [:]
     private var timer: Timer?
+    private var updateTimer: Timer?
     private var slowTick = 0
+    /// Menü paneli açıkken uygulama listesi daha sık yenilenir.
+    var panelOpen = false
 
     init() {
         appGains = UserDefaults.standard.dictionary(forKey: "appGains") as? [String: Double] ?? [:]
@@ -37,34 +47,59 @@ final class Model: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
+        // Açılıştan biraz sonra, sonra saatte bir "gün doldu mu" diye bak
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.checkForUpdate() }
+        updateTimer = Timer.scheduledTimer(withTimeInterval: 60 * 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.checkForUpdate() }
+        }
         var addr = CA.address(kAudioHardwarePropertyDefaultOutputDevice)
         AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &addr, .main) { [weak self] _, _ in
             MainActor.assumeIsolated { self?.outputChanged() }
         }
     }
 
+    /// Her saniye hafif yenileme; süreç listesini taramak pahalı olduğu için tam yenileme
+    /// panel açıkken 2, kapalıyken 4 saniyede bir (yeni yardımcı süreçler tap'e yine eklenir).
     private func tick() {
         slowTick += 1
-        refresh(full: slowTick % 2 == 0)
+        refresh(full: slowTick % (panelOpen ? 2 : 4) == 0)
     }
 
     func refresh(full: Bool) {
         let now = Date()
         let newTabs = ChromeBridge.tabs().filter { $0.playing || now.timeIntervalSince($0.lastActiveDate) < recentWindow }
         if newTabs != tabs { tabs = newTabs }
-        chromeConnected = ChromeBridge.isConnected
+        // @Published değerleri yalnızca değişince ata; yoksa her saniye arayüz yeniden çizilir
+        let connected = ChromeBridge.isConnected
+        if connected != chromeConnected { chromeConnected = connected }
 
+        let available: Bool
         if let volume = SystemVolume.volume {
-            systemVolumeAvailable = SystemVolume.isSettable
+            available = SystemVolume.isSettable
             if abs(volume - systemVolume) > 0.005 { systemVolume = volume }
         } else {
-            systemVolumeAvailable = false
+            available = false
         }
-        outputName = SystemVolume.deviceName
+        if available != systemVolumeAvailable { systemVolumeAvailable = available }
+        let name = SystemVolume.deviceName
+        if name != outputName { outputName = name }
         let permission = AudioPermission.status
         if permission != audioPermission { audioPermission = permission }
 
         if full { refreshApps() }
+    }
+
+    // MARK: Güncelleme
+
+    func checkForUpdate() {
+        guard UpdateChecker.isEnabled else {
+            if update != nil { update = nil }
+            return
+        }
+        Task {
+            let found = await UpdateChecker.checkIfDue()
+            if found != update { update = found }
+        }
     }
 
     // MARK: Menü çubuğu ikonu
@@ -99,7 +134,7 @@ final class Model: ObservableObject {
     // MARK: Uygulama sesleri
 
     /// Gösterilecek uygulamalar: Chrome her zaman en üstte, diğerleri çalıyorsa,
-    /// son 10 dakikada ses çıkardıysa ya da sesi kısılmışsa.
+    /// Ayarlar'daki süre içinde ses çıkardıysa ya da sesi kısılmışsa.
     var visibleApps: [AudioApp] {
         guard showOtherApps else { return [] }
         let now = Date()
@@ -135,11 +170,11 @@ final class Model: ObservableObject {
         let now = Date()
         let fresh = AudioProcesses.apps()
         for app in fresh where app.isPlaying { lastHeard[app.bundleID] = now }
-        if fresh.sorted(by: { $0.bundleID < $1.bundleID }) != apps.sorted(by: { $0.bundleID < $1.bundleID }) {
-            apps = fresh
-        }
+        let sorted = fresh.sorted { $0.bundleID < $1.bundleID }
+        if sorted != apps { apps = sorted }
         for app in fresh { applyTap(for: app.bundleID) }
-        for id in taps.keys where !fresh.contains(where: { $0.bundleID == id }) { taps[id] = nil }
+        let ids = Set(fresh.map(\.bundleID))
+        for id in taps.keys where !ids.contains(id) { taps[id] = nil }
     }
 
     /// Kazanç %100'se tap'i kaldır (ek gecikme olmasın), değilse oluştur/güncelle.

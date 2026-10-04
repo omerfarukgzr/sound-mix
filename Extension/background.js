@@ -66,10 +66,21 @@ async function prune() {
 // Durum mesajları art arda gelir (ses çubuğu sürüklenirken onlarca kez). push() eşzamanlı
 // çalışırsa eski bir hesap yenisinden sonra gönderilip uygulamadaki sesi geri alabilir.
 // Bu yüzden gönderimler sıraya girer ve en son durum her zaman en son gönderilir.
+// Ayrıca 100 ms içindeki istekler tek gönderimde birleşir; durum gönderim anında okunduğu için
+// en son hali kaybolmaz.
 let pushing = false;
 let pushAgain = false;
+let pushTimer = 0;
 
-async function push() {
+function push() {
+  if (pushTimer) return;
+  pushTimer = setTimeout(() => {
+    pushTimer = 0;
+    pushNow();
+  }, 100);
+}
+
+async function pushNow() {
   if (pushing) {
     pushAgain = true;
     return;

@@ -49,9 +49,9 @@ final class MenuPanelController: NSObject {
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-        model.$tabs.combineLatest(model.$apps)
+        model.$tabs.combineLatest(model.$apps, model.$update)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _ in self?.updateIcon() }
+            .sink { [weak self] _, _, _ in self?.updateIcon() }
             .store(in: &cancellables)
         updateIcon()
     }
@@ -94,7 +94,7 @@ final class MenuPanelController: NSObject {
     }
 
     private func updateIcon() {
-        statusItem.button?.image = MenuBarIcon.image(active: model.isActive)
+        statusItem.button?.image = MenuBarIcon.image(active: model.isActive, badge: model.update != nil)
     }
 
     private var isOpen = false
@@ -104,11 +104,12 @@ final class MenuPanelController: NSObject {
     }
 
     private func openPanel() {
-        guard let button = statusItem.button, let buttonWindow = button.window else { return }
+        guard let button = statusItem.button, let buttonWindow = button.window,
+              let screen = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame else { return }
+        model.panelOpen = true
         model.refresh(full: true)
         let height = max(hosting.fittingSize.height, contentHeight, 80)
         let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        let screen = buttonWindow.screen?.visibleFrame ?? NSScreen.main!.visibleFrame
         var x = buttonRect.minX
         x = min(x, screen.maxX - Self.width - 8)
         let frame = NSRect(x: x, y: buttonRect.minY - 6 - height, width: Self.width, height: height)
@@ -132,6 +133,7 @@ final class MenuPanelController: NSObject {
     func closePanel() {
         guard isOpen else { return }
         isOpen = false
+        model.panelOpen = false
         statusItem.button?.highlight(false)
         panel.hasShadow = false
         animateContent(show: false) { [weak self] in

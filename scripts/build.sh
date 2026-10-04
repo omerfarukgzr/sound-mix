@@ -42,10 +42,14 @@ echo "Hazır: $APP"
 echo "Yayın dosyası: $ZIP"
 
 if [ "${1:-}" = "--install" ]; then
-  # Sadece menü uygulamasını kapat; Chrome'un başlattığı köprü (argümanlı) çalışmaya devam etsin
+  # Önce menü uygulamasını kapat; köprü yeni sürüm kopyalandıktan sonra kapatılıyor
   pkill -f "Tab Mixer.app/Contents/MacOS/TabMixer$" 2>/dev/null || true
   rm -rf "$HOME/Applications/Tab Mixer.app"
   cp -R "$APP" "$HOME/Applications/"
+  # Chrome'un başlattığı köprü eski ikiliyle çalışmaya devam eder ve kendiliğinden kapanmaz.
+  # Onu da kapat; eklenti bağlantı kopunca yeniden bağlanır ve Chrome yeni ikiliyi başlatır.
+  # (Installer'ın "reload" komutu sadece eklenti dosyaları değiştiğinde gidiyor, ona güvenemeyiz.)
+  pkill -f "Tab Mixer.app/Contents/MacOS/TabMixer chrome-extension://" 2>/dev/null || true
   open "$HOME/Applications/Tab Mixer.app"
   echo "Kuruldu: ~/Applications/Tab Mixer.app"
 fi

@@ -7,6 +7,8 @@ enum Paths {
     static let shared = home.appendingPathComponent("Library/Caches/tab-mixer")
     static let state = shared.appendingPathComponent("state.json")
     static let socket = shared.appendingPathComponent("cmd.sock").path
+    /// Soketi o an tutan köprünün pid'i; uygulama köprünün yaşayıp yaşamadığına buradan bakar.
+    static let bridgePID = shared.appendingPathComponent("bridge.pid").path
 
     /// Kullanıcının Chrome'a "paketlenmemiş öğe" olarak yükleyeceği eklenti klasörü.
     static let extensionFolder = home.appendingPathComponent("Library/Application Support/Tab Mixer/Chrome Extension")

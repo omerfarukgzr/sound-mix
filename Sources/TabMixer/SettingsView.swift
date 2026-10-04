@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject var model: Model
     @AppStorage("recentMinutes") private var recentMinutes = 10
     @AppStorage("showOtherApps") private var showOtherApps = true
+    @AppStorage("checkUpdates") private var checkUpdates = true
     @State private var confirmReset = false
     var openSetup: () -> Void = {}
 
@@ -16,6 +17,11 @@ struct SettingsView: View {
         Form {
             Section {
                 Toggle("Mac açılınca başlat", isOn: Binding(get: { model.launchAtLogin }, set: { model.launchAtLogin = $0 }))
+                Toggle(isOn: $checkUpdates) {
+                    Text("Güncellemeleri denetle")
+                    Text("Günde bir kez GitHub'daki son sürüme bakar, hiçbir veri göndermez.")
+                }
+                .onChange(of: checkUpdates) { model.checkForUpdate() }
             }
 
             Section("Liste") {
@@ -76,7 +82,7 @@ struct SettingsView: View {
             } header: {
                 Text("İzinler ve gizlilik")
             } footer: {
-                Label("Tab Mixer internete bağlanmaz ve veri toplamaz. Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez.",
+                Label("Tab Mixer veri toplamaz. Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez.",
                       systemImage: "lock.shield")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

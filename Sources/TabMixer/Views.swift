@@ -71,6 +71,10 @@ struct MenuContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
+            if let update = model.update {
+                UpdateRow(update: update)
+                Divider().padding(.vertical, 2)
+            }
             systemSection
             Divider().padding(.vertical, 2)
             SectionHeader(title: "Uygulamalar")
@@ -78,6 +82,12 @@ struct MenuContent: View {
             if !chromeCollapsed { chromeVideos }
             ForEach(model.visibleApps) { app in
                 AppRow(app: app)
+            }
+            if Installer.isTranslocated {
+                Text("Tab Mixer'ı Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if model.tapError {
                 Text("Uygulama sesini ayarlamak için Sistem Ayarları › Gizlilik › Ses Kaydı'ndan Tab Mixer'a izin ver.")
@@ -152,7 +162,7 @@ struct MenuContent: View {
                 Text("Chrome kapalı veya Tab Mixer eklentisi yüklü değil. Kurulum için Ayarlar'a bak.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             } else if model.tabs.isEmpty {
-                Text("Son 10 dakikada oynatılan video yok.")
+                Text("Son \(model.recentWindowText) oynatılan video yok.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             } else {
                 if !model.playingTabs.isEmpty {
@@ -277,6 +287,22 @@ struct VideoRow: View {
     private func ago(_ date: Date) -> String {
         let minutes = Int(Date().timeIntervalSince(date) / 60)
         return minutes < 1 ? "az önce" : "\(minutes) dk"
+    }
+}
+
+/// Menünün en üstünde, yeni sürüm varsa.
+struct UpdateRow: View {
+    let update: AvailableUpdate
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
+            Text("Yeni sürüm var: \(update.version)").font(.system(size: 12.5))
+            Spacer()
+            Button("İndir") { NSWorkspace.shared.open(update.url) }
+                .buttonStyle(.link)
+                .font(.system(size: 12))
+        }
     }
 }
 

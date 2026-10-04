@@ -4,17 +4,30 @@ import Foundation
 enum Installer {
     static let hostName = "io.github.omerfarukgzr.tabmixer"
     static let extensionID = "hjdkncghobmcamdopbkbjonaebigjdcp"
+    /// İndirilen zip Downloads'tan açılınca macOS uygulamayı rastgele geçici bir yoldan çalıştırır (App Translocation).
+    /// O yol kaybolacağı için köprü kaydı yazılmaz; arayüz bu durumda uygulamayı taşıması için uyarabilir.
+    static let isTranslocated = Bundle.main.bundlePath.contains("/AppTranslocation/")
 
     static func run() {
         installNativeHost()
-        if copyExtension() {
-            // Eklenti zaten yüklüyse yeni sürümü hemen yüklesin
+        let extensionChanged = copyExtension()
+        if extensionChanged || appVersionChanged() {
+            // Eklenti yeni sürümü hemen yüklesin. Sadece uygulama değişse bile gerekli: Chrome'un başlattığı
+            // köprü eski ikiliyle çalışmaya devam ediyor, eklenti yeniden bağlanınca yenisi başlıyor.
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { ChromeBridge.send(["cmd": "reload"]) }
         }
     }
 
+    /// Uygulama son açılıştan beri güncellendiyse true döner.
+    private static func appVersionChanged() -> Bool {
+        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+        let last = UserDefaults.standard.string(forKey: "lastRunVersion")
+        UserDefaults.standard.set(current, forKey: "lastRunVersion")
+        return last != nil && last != current
+    }
+
     private static func installNativeHost() {
-        guard let executable = Bundle.main.executablePath else { return }
+        guard !isTranslocated, let executable = Bundle.main.executablePath else { return }
         let manifest: [String: Any] = [
             "name": hostName,
             "description": "Tab Mixer",

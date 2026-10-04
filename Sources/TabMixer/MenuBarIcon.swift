@@ -1,9 +1,9 @@
 import AppKit
 
 /// Menü çubuğu ikonu: uygulama ikonundaki üç sürgünün tek renkli hali.
-/// Bir şey çalarken tutamaklar dolu, çalmıyorken içi boş.
+/// Bir şey çalarken tutamaklar dolu, çalmıyorken içi boş. Yeni sürüm varsa sağ üstte nokta.
 enum MenuBarIcon {
-    static func image(active: Bool) -> NSImage {
+    static func image(active: Bool, badge: Bool = false) -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
             let rows: [(y: CGFloat, knob: CGFloat)] = [(4.5, 12), (9, 5.5), (13.5, 10)]
             for row in rows {
@@ -30,6 +30,10 @@ enum MenuBarIcon {
                     knob.lineWidth = 1.2
                     knob.stroke()
                 }
+            }
+            if badge {
+                NSColor.black.set()
+                NSBezierPath(ovalIn: NSRect(x: 14, y: 0, width: 4, height: 4)).fill()
             }
             return true
         }
