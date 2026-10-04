@@ -10,13 +10,14 @@ macOS'un "Şu An Çalan" menüsü Chrome'da aynı anda açık olan videolardan s
 
 ## Özellikler
 
-- **Chrome video listesi:** Şu an çalanlar ve son 10 dakikada durdurulanlar, site ikonlarıyla birlikte. YouTube ana sayfasındaki gibi sessiz önizlemeler listeye girmez.
+- **Chrome video listesi:** Şu an çalanlar ve son 10 dakikada durdurulanlar (süre Ayarlar'dan değişir), site ikonlarıyla birlikte. YouTube ana sayfasındaki gibi sessiz önizlemeler listeye girmez.
 - **Oynat / durdur:** Videonun adına tıkla. İframe içindeki oynatıcılarla da çalışır.
 - **Video başına ses:** Her videonun kendi ses çubuğu var.
 - **Uygulama mikseri:** Chrome, Discord, WhatsApp gibi uygulamaların sesini ayrı ayrı kıs.
 - **Mac sesi:** En üstte genel ses ve çıkış cihazı.
 - **Sekmeye git:** Videonun sekmesini tek tıkla öne getir.
-- Hiçbir veri bilgisayarından dışarı çıkmaz. İnternete bağlanmaz, analitik toplamaz.
+- **Güncelleme bildirimi:** Yeni sürüm çıkınca menüde görünür.
+- Veri toplamaz, analitik kullanmaz.
 
 ## Gereksinimler
 
@@ -45,9 +46,20 @@ Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir:
 
 Eklenti bağlanınca yardımcı "Hazır!" der. Açık video sekmelerini bir kez yenile.
 
-Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kur…** ile tekrar açabilirsin. Eklenti kalıcı klasör yerine geçici bir kopyadan yükleniyorsa aynı yerde **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer.
+Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kur…** ile tekrar açabilirsin. Eklentide bir sorun olursa (güncel değilse ya da yanlış klasörden yükleniyorsa) menüde uyarı, aynı yerde de **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer. Önce kaldırman gerekmez.
 
 > Chrome açılışta ara sıra "geliştirici modundaki eklentileri devre dışı bırak" diye hatırlatma gösterebilir. Bunu kapatman yeterli, eklenti çalışmaya devam eder.
+
+## Güncelleme
+
+Sound Mix günde bir kez GitHub'daki son sürüme bakar. Yeni sürüm varsa menünün en üstünde **"Yeni sürüm var"** satırı ve menü çubuğu ikonunda küçük bir nokta görünür. **İndir**'e basınca Releases sayfası açılır.
+
+1. Yeni zip'i indir, `Sound Mix.app`'i Uygulamalar klasörüne sürükleyip eskisinin üzerine yaz.
+2. Uygulamayı aç.
+
+Chrome eklentisi de kendiliğinden güncellenir, tekrar kurman gerekmez. Ayarların korunur.
+
+Güncelleme kontrolünü **Ayarlar › Güncellemeleri denetle** ile kapatabilirsin. Kontrol hiçbir veri göndermez, sadece GitHub'dan son sürüm numarasını okur.
 
 ## İzinler ve gizlilik
 
@@ -119,4 +131,4 @@ Elle kaldırmak istersen:
 
 **Install:** download the zip from [Releases](../../releases/latest), move `Sound Mix.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page. To uninstall, use *Settings › Sound Mix'i kaldır…*.
 
-No data leaves your Mac. Requires macOS 14.4+ and Google Chrome. MIT licensed.
+Updates: the app checks GitHub once a day and shows a "new version" row in the menu (can be turned off in Settings); the Chrome extension updates itself together with the app. No data is collected. Requires macOS 14.4+ and Google Chrome. MIT licensed.
