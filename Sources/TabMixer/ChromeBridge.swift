@@ -35,7 +35,7 @@ enum ChromeBridge {
         var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
         guard proc_pidpath(pid, &path, UInt32(path.count)) > 0 else { return false }
         // Pid başka bir sürece verilmiş olabilir
-        return String(cString: path).hasSuffix("/TabMixer")
+        return String(cString: path).hasSuffix("/" + (Bundle.main.executableURL?.lastPathComponent ?? "SoundMix"))
     }
 
     static func tabs() -> [ChromeTab] {

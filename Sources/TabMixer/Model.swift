@@ -205,7 +205,7 @@ final class Model: ObservableObject {
         AudioPermission.request { [weak self] _ in
             // İzin penceresi kapanınca odak başka uygulamaya geçiyor; Ayarlar'ı tekrar öne getir
             NSApp.activate(ignoringOtherApps: true)
-            NSApp.windows.first { $0.title == "Tab Mixer Ayarları" }?.makeKeyAndOrderFront(nil)
+            NSApp.windows.first { $0.title == "Sound Mix Ayarları" }?.makeKeyAndOrderFront(nil)
             guard let self else { return }
             self.audioPermission = AudioPermission.status
             self.tapError = false

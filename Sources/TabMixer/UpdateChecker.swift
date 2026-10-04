@@ -9,7 +9,7 @@ struct AvailableUpdate: Equatable {
 /// Günde bir kez GitHub'daki son sürüme bakar. Hiçbir veri göndermez; ağ yoksa ya da
 /// GitHub hata verirse sessizce geçer. Taslak ve ön sürümler /releases/latest'te zaten yer almaz.
 enum UpdateChecker {
-    private static let endpoint = URL(string: "https://api.github.com/repos/omerfarukgzr/tab-mixer/releases/latest")!
+    private static let endpoint = URL(string: "https://api.github.com/repos/omerfarukgzr/sound-mix/releases/latest")!
     static let interval: TimeInterval = 24 * 60 * 60
 
     static var currentVersion: String {

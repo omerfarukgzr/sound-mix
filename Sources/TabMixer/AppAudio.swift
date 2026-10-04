@@ -92,7 +92,7 @@ final class AppVolumeTap {
             return nil
         }
         let config: [String: Any] = [
-            kAudioAggregateDeviceNameKey: "Tab Mixer – \(name)",
+            kAudioAggregateDeviceNameKey: "Sound Mix – \(name)",
             kAudioAggregateDeviceUIDKey: "io.github.omerfarukgzr.tabmixer.\(UUID().uuidString)",
             kAudioAggregateDeviceMainSubDeviceKey: outputUID,
             kAudioAggregateDeviceIsPrivateKey: true,

@@ -84,13 +84,13 @@ struct MenuContent: View {
                 AppRow(app: app)
             }
             if Installer.isTranslocated {
-                Text("Tab Mixer'ı Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
+                Text("Sound Mix'i Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if model.tapError {
-                Text("Uygulama sesini ayarlamak için Sistem Ayarları › Gizlilik › Ses Kaydı'ndan Tab Mixer'a izin ver.")
+                Text("Uygulama sesini ayarlamak için Sistem Ayarları › Gizlilik › Ses Kaydı'ndan Sound Mix'e izin ver.")
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
@@ -159,7 +159,7 @@ struct MenuContent: View {
     private var chromeVideos: some View {
         VStack(alignment: .leading, spacing: 4) {
             if !model.chromeConnected {
-                Text("Chrome kapalı veya Tab Mixer eklentisi yüklü değil. Kurulum için Ayarlar'a bak.")
+                Text("Chrome kapalı veya Sound Mix eklentisi yüklü değil. Kurulum için Ayarlar'a bak.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             } else if model.tabs.isEmpty {
                 Text("Son \(model.recentWindowText) oynatılan video yok.")

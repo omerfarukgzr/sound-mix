@@ -38,7 +38,7 @@ enum MenuBarIcon {
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Tab Mixer"
+        image.accessibilityDescription = "Sound Mix"
         return image
     }
 }

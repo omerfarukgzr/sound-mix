@@ -202,7 +202,7 @@ final class MenuPanelController: NSObject {
         if setupWindow == nil {
             let view = SetupView(onDone: { [weak self] in self?.setupWindow?.close() }).environmentObject(model)
             let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-            window.title = "Tab Mixer Kurulumu"
+            window.title = "Sound Mix Kurulumu"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()
@@ -217,7 +217,7 @@ final class MenuPanelController: NSObject {
         if settingsWindow == nil {
             let controller = NSHostingController(rootView: SettingsView(openSetup: { [weak self] in self?.showSetup() }).environmentObject(model))
             let window = NSWindow(contentViewController: controller)
-            window.title = "Tab Mixer Ayarları"
+            window.title = "Sound Mix Ayarları"
             window.styleMask = [.titled, .closable]
             window.isReleasedWhenClosed = false
             window.center()

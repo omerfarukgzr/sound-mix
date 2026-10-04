@@ -13,7 +13,7 @@ struct SetupView: View {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Chrome eklentisini kur").font(.title3.weight(.semibold))
-                    Text("Tab Mixer'ın Chrome'daki videoları görebilmesi için bir kez gerekli.")
+                    Text("Sound Mix'in Chrome'daki videoları görebilmesi için bir kez gerekli.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -50,7 +50,7 @@ struct SetupView: View {
             Label("Hazır! Eklenti bağlandı.", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
                 .font(.headline)
-            Text("Açık video sekmelerini bir kez yenile. Videolar menü çubuğundaki Tab Mixer ikonunda görünecek.")
+            Text("Açık video sekmelerini bir kez yenile. Videolar menü çubuğundaki Sound Mix ikonunda görünecek.")
                 .font(.callout).foregroundStyle(.secondary)
             HStack {
                 Spacer()
@@ -95,7 +95,7 @@ private struct ExtensionDragTile: View {
                 Image(nsImage: NSWorkspace.shared.icon(forFile: Paths.extensionFolder.path))
                     .resizable().frame(width: 36, height: 36)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Tab Mixer eklentisi").font(.callout.weight(.medium))
+                    Text("Sound Mix eklentisi").font(.callout.weight(.medium))
                     Text("Beni Chrome'a sürükle").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()

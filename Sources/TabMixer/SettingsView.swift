@@ -50,7 +50,7 @@ struct SettingsView: View {
                     tint: .blue,
                     title: "Chrome eklentisi",
                     status: model.chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil"),
-                    summary: "Chrome'daki videoları bulur, hangisinin çaldığını ve ses seviyesini Tab Mixer'a bildirir. Menüden verdiğin oynat, durdur ve ses komutlarını videoya iletir.",
+                    summary: "Chrome'daki videoları bulur, hangisinin çaldığını ve ses seviyesini Sound Mix'e bildirir. Menüden verdiğin oynat, durdur ve ses komutlarını videoya iletir.",
                     details: [
                         ("checkmark", "Sadece sayfadaki video ve ses oynatıcılarına bakar."),
                         ("xmark", "Sayfa içeriğini, şifreleri, formları veya geçmişini okumaz."),
@@ -82,7 +82,7 @@ struct SettingsView: View {
             } header: {
                 Text("İzinler ve gizlilik")
             } footer: {
-                Label("Tab Mixer veri toplamaz. Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez.",
+                Label("Sound Mix veri toplamaz. Mikrofon, kamera, ekran kaydı veya dosyalarına erişim istemez.",
                       systemImage: "lock.shield")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -91,7 +91,7 @@ struct SettingsView: View {
             Section {
                 LabeledContent("Sürüm", value: version)
                 LabeledContent("Kaynak kodu") {
-                    Link("GitHub", destination: URL(string: "https://github.com/omerfarukgzr/tab-mixer")!)
+                    Link("GitHub", destination: URL(string: "https://github.com/omerfarukgzr/sound-mix")!)
                 }
             }
         }

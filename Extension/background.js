@@ -28,7 +28,7 @@ async function favicon(tab) {
 
 let retryDelay = 1000;
 
-// Tab Mixer uygulaması kapanır, güncellenir ya da hiç kurulu değilse bağlantı kopar.
+// Sound Mix uygulaması kapanır, güncellenir ya da hiç kurulu değilse bağlantı kopar.
 // Hatayı okuyup (Chrome'un "işlenmemiş hata" uyarısı çıkmasın) artan aralıklarla yeniden dene.
 function connect() {
   port = chrome.runtime.connectNative(HOST);

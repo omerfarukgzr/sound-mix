@@ -1,12 +1,13 @@
 #!/bin/bash
-# Tab Mixer'ı derler ve dist/ klasörüne "Tab Mixer.app" ile yayın zip'ini üretir.
+# Sound Mix'i derler ve dist/ klasörüne "Sound Mix.app" ile yayın zip'ini üretir.
 #   scripts/build.sh            → derle ve paketle
 #   scripts/build.sh --install  → ayrıca ~/Applications'a kur ve başlat
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Resources/Info.plist)
-APP="dist/Tab Mixer.app"
+# .noindex: Spotlight bu klasöre bakmaz, yoksa kurulu uygulamanın yanında ikinci bir kopya görünür
+APP="dist/app.noindex/Sound Mix.app"
 
 # Apple Silicon + Intel için tek dosya
 swift build -c release --arch arm64 --arch x86_64
@@ -29,13 +30,13 @@ fi
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/TabMixer"
+cp "$BIN" "$APP/Contents/MacOS/SoundMix"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp -R Extension "$APP/Contents/Resources/Extension"
 codesign --force --deep --sign - "$APP"
 
-ZIP="dist/TabMixer-$VERSION.zip"
+ZIP="dist/SoundMix-$VERSION.zip"
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 echo "Hazır: $APP"
@@ -43,13 +44,17 @@ echo "Yayın dosyası: $ZIP"
 
 if [ "${1:-}" = "--install" ]; then
   # Önce menü uygulamasını kapat; köprü yeni sürüm kopyalandıktan sonra kapatılıyor
+  pkill -f "Sound Mix.app/Contents/MacOS/SoundMix$" 2>/dev/null || true
+  # Eski adla (Tab Mixer) kurulu kopyayı da kaldır
   pkill -f "Tab Mixer.app/Contents/MacOS/TabMixer$" 2>/dev/null || true
   rm -rf "$HOME/Applications/Tab Mixer.app"
+  rm -rf "$HOME/Applications/Sound Mix.app"
   cp -R "$APP" "$HOME/Applications/"
   # Chrome'un başlattığı köprü eski ikiliyle çalışmaya devam eder ve kendiliğinden kapanmaz.
   # Onu da kapat; eklenti bağlantı kopunca yeniden bağlanır ve Chrome yeni ikiliyi başlatır.
   # (Installer'ın "reload" komutu sadece eklenti dosyaları değiştiğinde gidiyor, ona güvenemeyiz.)
+  pkill -f "Sound Mix.app/Contents/MacOS/SoundMix chrome-extension://" 2>/dev/null || true
   pkill -f "Tab Mixer.app/Contents/MacOS/TabMixer chrome-extension://" 2>/dev/null || true
-  open "$HOME/Applications/Tab Mixer.app"
-  echo "Kuruldu: ~/Applications/Tab Mixer.app"
+  open "$HOME/Applications/Sound Mix.app"
+  echo "Kuruldu: ~/Applications/Sound Mix.app"
 fi

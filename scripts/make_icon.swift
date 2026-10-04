@@ -1,4 +1,4 @@
-// Tab Mixer uygulama ikonunu çizer (tasarım: "C3 · Koyu, dolu çizgi").
+// Sound Mix uygulama ikonunu çizer (tasarım: "C3 · Koyu, dolu çizgi").
 // Kullanım: swift scripts/make_icon.swift <çıktı.png>
 import AppKit
 

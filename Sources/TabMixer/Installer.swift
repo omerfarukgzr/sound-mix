@@ -30,7 +30,7 @@ enum Installer {
         guard !isTranslocated, let executable = Bundle.main.executablePath else { return }
         let manifest: [String: Any] = [
             "name": hostName,
-            "description": "Tab Mixer",
+            "description": "Sound Mix",
             "path": executable,
             "type": "stdio",
             "allowed_origins": ["chrome-extension://\(extensionID)/"],

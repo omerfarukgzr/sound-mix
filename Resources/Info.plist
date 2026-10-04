@@ -3,27 +3,27 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Tab Mixer</string>
+	<string>Sound Mix</string>
 	<key>CFBundleExecutable</key>
-	<string>TabMixer</string>
+	<string>SoundMix</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>io.github.omerfarukgzr.tabmixer</string>
 	<key>CFBundleName</key>
-	<string>Tab Mixer</string>
+	<string>Sound Mix</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.1</string>
+	<string>1.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>3</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.4</string>
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>Uygulamaların sesini ayrı ayrı ayarlayabilmek için Tab Mixer'ın uygulama seslerine erişmesi gerekiyor.</string>
+	<string>Uygulamaların sesini ayrı ayrı ayarlayabilmek için Sound Mix'in uygulama seslerine erişmesi gerekiyor.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>© 2026 Ömer Faruk Gezer. MIT License.</string>
 </dict>
