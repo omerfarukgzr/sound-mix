@@ -39,13 +39,13 @@ Menü çubuğunda Sound Mix ikonu görünür.
 
 Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir:
 
-1. **"Eklentiler sayfasını aç"** butonuna bas.
+1. **"Eklentiler sayfasını aç"** butonuna bas. Chrome'da eklentiler sayfası açılır.
 2. Chrome'da sağ üstteki **Geliştirici modu** anahtarını aç.
 3. Yardımcıdaki **"Beni Chrome'a sürükle"** kutusunu Chrome'daki sayfanın üzerine sürükleyip bırak.
 
 Eklenti bağlanınca yardımcı "Hazır!" der. Açık video sekmelerini bir kez yenile.
 
-Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kurulum yardımcısını aç** ile tekrar açabilirsin. Sürükleme çalışmazsa **"klasör yolunu kopyala"** bağlantısına bas, Chrome'da **Paketlenmemiş öğe yükle**'ye bas, **⌘⇧G** ile yolu yapıştırıp klasörü seç.
+Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kur…** ile tekrar açabilirsin. Eklenti kalıcı klasör yerine geçici bir kopyadan yükleniyorsa aynı yerde **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer.
 
 > Chrome açılışta ara sıra "geliştirici modundaki eklentileri devre dışı bırak" diye hatırlatma gösterebilir. Bunu kapatman yeterli, eklenti çalışmaya devam eder.
 
@@ -100,10 +100,14 @@ scripts/build.sh --install  # ayrıca ~/Applications'a kurar ve başlatır
 
 ## Kaldırma
 
+En kolayı uygulamanın içinden: **Ayarlar… › Sound Mix'i kaldır…** butonuna bas. Chrome eklentisi (Chrome ayrıca onay ister), Chrome köprüsü kaydı, Mac açılınca başlatma ve bütün ayarlar silinir, `Sound Mix.app` çöpe taşınır.
+
+Elle kaldırmak istersen:
+
 1. Menüden **Çık**'a bas ve `Sound Mix.app` dosyasını çöpe at.
 2. Chrome'da `chrome://extensions` sayfasından eklentiyi kaldır.
 3. İstersen şu dosyaları da sil:
-   - `~/Library/Application Support/Tab Mixer`
+   - `~/Library/Application Support/Sound Mix`
    - `~/Library/Caches/tab-mixer`
    - `~/Library/Application Support/Google/Chrome/NativeMessagingHosts/io.github.omerfarukgzr.tabmixer.json`
 
@@ -113,6 +117,6 @@ scripts/build.sh --install  # ayrıca ~/Applications'a kurar ve başlatır
 
 **Sound Mix** is a macOS menu bar app that lists every playing video in Chrome (not just one, like Now Playing does), lets you play/pause each one, set per-video volume, and mix per-app volume (Chrome, Discord, …) using Core Audio process taps.
 
-**Install:** download the zip from [Releases](../../releases/latest), move `Sound Mix.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page.
+**Install:** download the zip from [Releases](../../releases/latest), move `Sound Mix.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page. To uninstall, use *Settings › Sound Mix'i kaldır…*.
 
 No data leaves your Mac. Requires macOS 14.4+ and Google Chrome. MIT licensed.

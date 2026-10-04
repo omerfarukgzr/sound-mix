@@ -83,6 +83,12 @@ struct MenuContent: View {
             ForEach(model.visibleApps) { app in
                 AppRow(app: app)
             }
+            if model.extensionOutdated {
+                Text("Chrome eklentisi güncel değil. Ayarlar › Chrome eklentisi › Onar… ile yeniden yükle.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if Installer.isTranslocated {
                 Text("Sound Mix'i Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
                     .font(.system(size: 11))

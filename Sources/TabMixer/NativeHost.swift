@@ -37,13 +37,15 @@ enum NativeHost {
         guard body.count == length else { return false }
         if let message = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
            message["type"] as? String == "state", let tabs = message["tabs"] {
-            writeState(tabs)
+            writeState(tabs, version: message["version"] as? String)
         }
         return true
     }
 
-    private static func writeState(_ tabs: Any) {
-        guard let data = try? JSONSerialization.data(withJSONObject: ["tabs": tabs]) else { return }
+    private static func writeState(_ tabs: Any, version: String? = nil) {
+        var state: [String: Any] = ["tabs": tabs]
+        if let version, version.count <= 32 { state["version"] = version }
+        guard let data = try? JSONSerialization.data(withJSONObject: state) else { return }
         try? data.write(to: Paths.state, options: .atomic)
     }
 

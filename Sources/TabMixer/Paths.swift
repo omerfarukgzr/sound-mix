@@ -11,7 +11,9 @@ enum Paths {
     static let bridgePID = shared.appendingPathComponent("bridge.pid").path
 
     /// Kullanıcının Chrome'a "paketlenmemiş öğe" olarak yükleyeceği eklenti klasörü.
-    static let extensionFolder = home.appendingPathComponent("Library/Application Support/Tab Mixer/Chrome Extension")
+    static let extensionFolder = home.appendingPathComponent("Library/Application Support/Sound Mix/Chrome Extension")
+    /// Eski adla (Tab Mixer) kurulanların eklenti klasörü; Chrome eklenti kartında yolu gösterdiği için taşındı.
+    static let legacyExtensionFolder = home.appendingPathComponent("Library/Application Support/Tab Mixer/Chrome Extension")
 
     static let nativeHostsFolder = home.appendingPathComponent("Library/Application Support/Google/Chrome/NativeMessagingHosts")
 }

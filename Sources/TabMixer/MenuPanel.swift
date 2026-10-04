@@ -13,6 +13,7 @@ final class MenuPanelController: NSObject {
     private var hosting: NSHostingView<AnyView>!
     private var settingsWindow: NSWindow?
     private var setupWindow: NSWindow?
+    private var setupPoll: Timer?
     private var outsideClickMonitor: Any?
     private var cancellables: Set<AnyCancellable> = []
     private var contentHeight: CGFloat = 0
@@ -210,10 +211,22 @@ final class MenuPanelController: NSObject {
         }
         NSApp.activate(ignoringOtherApps: true)
         setupWindow?.makeKeyAndOrderFront(nil)
+
+        // Onarımda eski eklenti kaldırılıp yenisi yüklenince yardımcı fark etsin diye Chrome'un
+        // tercihlerine birkaç saniyede bir bak; pencere kapanınca durur
+        model.refreshExtensionLocation()
+        setupPoll?.invalidate()
+        setupPoll = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] timer in
+            MainActor.assumeIsolated {
+                guard let self, self.setupWindow?.isVisible == true else { timer.invalidate(); return }
+                self.model.refreshExtensionLocation()
+            }
+        }
     }
 
     private func showSettings() {
         closePanel()
+        model.refreshExtensionLocation()
         if settingsWindow == nil {
             let controller = NSHostingController(rootView: SettingsView(openSetup: { [weak self] in self?.showSetup() }).environmentObject(model))
             let window = NSWindow(contentViewController: controller)

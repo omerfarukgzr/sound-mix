@@ -117,13 +117,16 @@ async function pushOnce() {
     }
   }
   try {
-    port?.postMessage({ type: 'state', tabs });
+    // Sürüm de gitsin: uygulama, Chrome'daki eklentinin güncel olup olmadığını buradan anlar
+    port?.postMessage({ type: 'state', version: chrome.runtime.getManifest().version, tabs });
   } catch {}
 }
 
 function onCommand(msg) {
   if (!msg || typeof msg !== 'object') return;
-  if (msg.cmd !== 'reload' && !Number.isInteger(msg.tabId)) return;
+  // reload ve uninstall eklentinin tamamı için; diğer komutlar bir sekmeye gider
+  const whole = msg.cmd === 'reload' || msg.cmd === 'uninstall';
+  if (!whole && !Number.isInteger(msg.tabId)) return;
   if (msg.cmd === 'volume' && !(typeof msg.value === 'number' && msg.value >= 0 && msg.value <= 1)) return;
   if (msg.cmd === 'toggle') {
     const fs = tabFrames(msg.tabId);
@@ -137,6 +140,12 @@ function onCommand(msg) {
     }
   } else if (msg.cmd === 'reload') {
     chrome.runtime.reload();
+  } else if (msg.cmd === 'uninstall') {
+    // Sound Mix uygulamadan kaldırılırken. uninstallSelf "management" izni istemez;
+    // Chrome onay penceresi gösterir, kullanıcı vazgeçerse söz reddedilir.
+    try {
+      chrome.management.uninstallSelf({ showConfirmDialog: true }).catch(() => {});
+    } catch {}
   } else if (msg.cmd === 'focus') {
     chrome.tabs.get(msg.tabId).then((tab) => {
       chrome.tabs.update(tab.id, { active: true });

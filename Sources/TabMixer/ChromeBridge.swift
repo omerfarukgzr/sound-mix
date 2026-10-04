@@ -21,6 +21,7 @@ enum ChromeBridge {
     private static var iconCache: [String: NSImage] = [:]
     private static var cachedStamp: FileStamp?
     private static var cachedTabs: [ChromeTab] = []
+    private static var cachedVersion: String?
 
     /// Dosya değişti mi diye bakmak için inode + boyut + değişme zamanı (atomik yazım inode'u da değiştirir).
     private struct FileStamp: Equatable {
@@ -29,28 +30,46 @@ enum ChromeBridge {
 
     /// Köprü süreci gerçekten yaşıyor mu? Çökmüş köprünün soket dosyası diskte kalabiliyor,
     /// o yüzden pid dosyasındaki süreç hâlâ bizim ikilimiz mi diye bakıyoruz. Her saniye çağrılıyor, ucuz tutuldu.
-    static var isConnected: Bool {
+    static var isConnected: Bool { bridgePID != nil }
+
+    /// Çalışan köprünün pid'i. Eklenti yeniden yüklenince köprü de yeni bir süreçle başlar.
+    static var bridgePID: pid_t? {
         guard let text = try? String(contentsOfFile: Paths.bridgePID, encoding: .utf8),
-              let pid = pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 0 else { return false }
+              let pid = pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 0 else { return nil }
         var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
-        guard proc_pidpath(pid, &path, UInt32(path.count)) > 0 else { return false }
+        guard proc_pidpath(pid, &path, UInt32(path.count)) > 0 else { return nil }
         // Pid başka bir sürece verilmiş olabilir
-        return String(cString: path).hasSuffix("/" + (Bundle.main.executableURL?.lastPathComponent ?? "SoundMix"))
+        return String(cString: path).hasSuffix("/" + (Bundle.main.executableURL?.lastPathComponent ?? "SoundMix")) ? pid : nil
     }
 
     static func tabs() -> [ChromeTab] {
-        struct State: Decodable { let tabs: [ChromeTab] }
         // Köprü yoksa dosyada kalan "çalıyor" sekmeleri sonsuza kadar listelenmesin
         guard isConnected else { return [] }
+        loadState()
+        return cachedTabs
+    }
+
+    /// Chrome'da çalışan eklentinin sürümü (eski eklentiler bildirmez, o zaman nil).
+    static func extensionVersion() -> String? {
+        guard isConnected else { return nil }
+        loadState()
+        return cachedVersion
+    }
+
+    private static func loadState() {
+        struct State: Decodable { let tabs: [ChromeTab]; let version: String? }
         var info = stat()
-        guard stat(stateURL.path, &info) == 0 else { return [] }
+        guard stat(stateURL.path, &info) == 0 else {
+            (cachedTabs, cachedVersion, cachedStamp) = ([], nil, nil)
+            return
+        }
         let stamp = FileStamp(ino: info.st_ino, size: info.st_size,
                               sec: info.st_mtimespec.tv_sec, nsec: info.st_mtimespec.tv_nsec)
-        if stamp == cachedStamp { return cachedTabs }
-        let data = try? Data(contentsOf: stateURL)
-        cachedTabs = data.flatMap { try? JSONDecoder().decode(State.self, from: $0) }?.tabs ?? []
+        if stamp == cachedStamp { return }
+        let state = (try? Data(contentsOf: stateURL)).flatMap { try? JSONDecoder().decode(State.self, from: $0) }
+        cachedTabs = state?.tabs ?? []
+        cachedVersion = state?.version
         cachedStamp = stamp
-        return cachedTabs
     }
 
     static func icon(for tab: ChromeTab) -> NSImage? {
@@ -86,4 +105,6 @@ enum ChromeBridge {
     static func toggle(_ tab: ChromeTab) { send(["cmd": "toggle", "tabId": tab.tabId]) }
     static func focus(_ tab: ChromeTab) { send(["cmd": "focus", "tabId": tab.tabId]) }
     static func setVolume(_ tab: ChromeTab, _ value: Double) { send(["cmd": "volume", "tabId": tab.tabId, "value": value]) }
+    /// Eklenti kendini Chrome'dan kaldırır; Chrome önce kendi onay penceresini gösterir.
+    static func uninstallExtension() { send(["cmd": "uninstall"]) }
 }

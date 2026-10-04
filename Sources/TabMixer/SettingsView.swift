@@ -7,6 +7,7 @@ struct SettingsView: View {
     @AppStorage("showOtherApps") private var showOtherApps = true
     @AppStorage("checkUpdates") private var checkUpdates = true
     @State private var confirmReset = false
+    @State private var confirmUninstall = false
     var openSetup: () -> Void = {}
 
     private var version: String {
@@ -49,14 +50,14 @@ struct SettingsView: View {
                     icon: "puzzlepiece.extension.fill",
                     tint: .blue,
                     title: "Chrome eklentisi",
-                    status: model.chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil"),
+                    status: extensionStatus,
                     summary: "Chrome'daki videoları bulur, hangisinin çaldığını ve ses seviyesini Sound Mix'e bildirir. Menüden verdiğin oynat, durdur ve ses komutlarını videoya iletir.",
                     details: [
                         ("checkmark", "Sadece sayfadaki video ve ses oynatıcılarına bakar."),
                         ("xmark", "Sayfa içeriğini, şifreleri, formları veya geçmişini okumaz."),
                         ("info.circle", "Chrome'un \"tüm sitelerdeki verileri okuma\" uyarısı, videoların çoğu zaman başka sitelerin içinde (iframe) oynamasından kaynaklanır."),
                     ],
-                    actionTitle: model.chromeConnected ? nil : "Kur…",
+                    actionTitle: model.extensionNeedsAttention ? "Onar…" : model.chromeConnected ? nil : "Kur…",
                     action: openSetup
                 )
                 PermissionRow(
@@ -94,12 +95,33 @@ struct SettingsView: View {
                     Link("GitHub", destination: URL(string: "https://github.com/omerfarukgzr/sound-mix")!)
                 }
             }
+
+            Section {
+                LabeledContent {
+                    Button("Sound Mix'i kaldır…", role: .destructive) { confirmUninstall = true }
+                        .confirmationDialog("Sound Mix kaldırılsın mı?", isPresented: $confirmUninstall) {
+                            Button("Kaldır", role: .destructive) { model.uninstall() }
+                        } message: {
+                            Text("Chrome eklentisi (Chrome ayrıca onay ister), Chrome köprüsü kaydı, Mac açılınca başlatma ve bütün ayarlar silinir. Kısılmış uygulama sesleri %100'e döner. Sound Mix.app çöpe taşınır ve uygulama kapanır.")
+                        }
+                } label: {
+                    Text("Kaldır")
+                    Text("Uygulamayı, Chrome eklentisini ve ayarlarını bu Mac'ten siler.")
+                }
+            }
         }
         .formStyle(.grouped)
         .scrollDisabled(true)
         .scrollIndicators(.never)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var extensionStatus: PermissionStatus {
+        // Geçici kopya Caches'te duruyor; macOS orayı temizleyince eklenti çalışmaz
+        if model.extensionNeedsRepair { return .missing("Geçici klasörden yükleniyor") }
+        if model.extensionOutdated { return .missing("Güncel değil") }
+        return model.chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil")
     }
 
     private var audioStatus: PermissionStatus {

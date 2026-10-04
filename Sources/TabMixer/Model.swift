@@ -26,11 +26,21 @@ final class Model: ObservableObject {
     @Published var outputName = ""
     @Published var tabs: [ChromeTab] = []
     @Published var chromeConnected = false
+    /// Eklenti yeniden yüklenince değişir; kurulum yardımcısı yüklemeyi Chrome'un geç yazılan tercihlerini beklemeden buradan anlar.
+    @Published var bridgePID: pid_t?
     @Published var apps: [AudioApp] = []
     @Published var appGains: [String: Double] = [:]
     @Published var tapError = false
     @Published var audioPermission = AudioPermission.status
     @Published var update: AvailableUpdate? = UpdateChecker.stored
+    /// Chrome eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
+    @Published var extensionNeedsRepair = false
+    /// Chrome'daki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
+    @Published var extensionOutdated = false
+    private var versionMismatchSince: Date?
+
+    /// Eklentinin yeniden yüklenmesi gerekiyor: geçici kopyadan yükleniyor ya da güncel değil.
+    var extensionNeedsAttention: Bool { extensionNeedsRepair || extensionOutdated }
 
     private var taps: [String: AppVolumeTap] = [:]
     private var lastHeard: [String: Date] = [:]
@@ -44,6 +54,7 @@ final class Model: ObservableObject {
     init() {
         appGains = UserDefaults.standard.dictionary(forKey: "appGains") as? [String: Double] ?? [:]
         refresh(full: true)
+        refreshExtensionLocation()
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
@@ -70,8 +81,11 @@ final class Model: ObservableObject {
         let newTabs = ChromeBridge.tabs().filter { $0.playing || now.timeIntervalSince($0.lastActiveDate) < recentWindow }
         if newTabs != tabs { tabs = newTabs }
         // @Published değerleri yalnızca değişince ata; yoksa her saniye arayüz yeniden çizilir
-        let connected = ChromeBridge.isConnected
+        let pid = ChromeBridge.bridgePID
+        if pid != bridgePID { bridgePID = pid }
+        let connected = pid != nil
         if connected != chromeConnected { chromeConnected = connected }
+        checkExtensionVersion(connected: connected, now: now)
 
         let available: Bool
         if let volume = SystemVolume.volume {
@@ -100,6 +114,28 @@ final class Model: ObservableObject {
             let found = await UpdateChecker.checkIfDue()
             if found != update { update = found }
         }
+    }
+
+    // MARK: Chrome eklentisi
+
+    /// Chrome'un tercih dosyalarını okur; açılışta ve Ayarlar ya da kurulum penceresi açıkken çağrılır.
+    /// Güncellemeden sonra eklentinin yeniden yüklenmesi birkaç saniye sürer; uyuşmazlık
+    /// 10 saniyeden uzun sürerse eklentinin güncellenemediğini varsay.
+    private func checkExtensionVersion(connected: Bool, now: Date) {
+        let bundled = Installer.bundledExtensionVersion
+        let mismatch = connected && bundled != nil && ChromeBridge.extensionVersion() != bundled
+        if mismatch {
+            if versionMismatchSince == nil { versionMismatchSince = now }
+        } else {
+            versionMismatchSince = nil
+        }
+        let outdated = versionMismatchSince.map { now.timeIntervalSince($0) > 10 } ?? false
+        if outdated != extensionOutdated { extensionOutdated = outdated }
+    }
+
+    func refreshExtensionLocation() {
+        let repair = ChromeExtension.loadedFromTemporaryCopy
+        if repair != extensionNeedsRepair { extensionNeedsRepair = repair }
     }
 
     // MARK: Menü çubuğu ikonu
@@ -227,6 +263,29 @@ final class Model: ObservableObject {
         set {
             objectWillChange.send()
             if newValue { try? SMAppService.mainApp.register() } else { try? SMAppService.mainApp.unregister() }
+        }
+    }
+
+    // MARK: Kaldırma
+
+    /// Sound Mix'i bu Mac'ten kaldırır: Chrome eklentisi, köprü kaydı, girişte başlatma, ayarlar ve uygulamanın kendisi.
+    func uninstall() {
+        // Komut köprü hâlâ ayaktayken gitsin; Chrome ayrıca kendi onayını sorar
+        ChromeBridge.uninstallExtension()
+        try? SMAppService.mainApp.unregister()
+        resetGains() // kısılmış uygulamaların sesi geri gelsin
+        timer?.invalidate()
+        updateTimer?.invalidate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            Installer.removeFiles()
+            if let id = Bundle.main.bundleIdentifier { UserDefaults.standard.removePersistentDomain(forName: id) }
+            // Paketsiz çalışırken (swift run) bundleURL derleme klasörüdür; onu çöpe atma
+            let app = Bundle.main.bundleURL
+            guard app.pathExtension == "app" else { NSApp.terminate(nil); return }
+            // Çöpe atılamasa da (ör. salt okunur bir yerden çalışıyorsa) uygulama kapansın
+            NSWorkspace.shared.recycle([app]) { _, _ in
+                DispatchQueue.main.async { NSApp.terminate(nil) }
+            }
         }
     }
 }
