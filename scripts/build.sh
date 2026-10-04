@@ -36,11 +36,12 @@ cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp -R Extension "$APP/Contents/Resources/Extension"
 codesign --force --deep --sign - "$APP"
 
-ZIP="dist/SoundMix-$VERSION.zip"
+# Sürüm numarası adda yok: README'deki releases/latest/download/SoundMix.zip linki hep son sürümü indirsin
+ZIP="dist/SoundMix.zip"
 rm -f "$ZIP"
 ditto -c -k --keepParent "$APP" "$ZIP"
 echo "Hazır: $APP"
-echo "Yayın dosyası: $ZIP"
+echo "Yayın dosyası: $ZIP (sürüm $VERSION)"
 
 if [ "${1:-}" = "--install" ]; then
   # Önce menü uygulamasını kapat; köprü yeni sürüm kopyalandıktan sonra kapatılıyor
