@@ -4,7 +4,11 @@
 
 <p align="center">Chrome'daki her videoyu ve Mac'teki her uygulamanın sesini menü çubuğundan yönet.</p>
 
-<p align="center"><a href="https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip"><b>⬇ Sound Mix'i indir (macOS)</b></a></p>
+<p align="center">Kurmak için Terminal'e yapıştır:</p>
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/omerfarukgzr/sound-mix/main/install.sh | bash
+```
 
 ---
 
@@ -18,7 +22,7 @@ macOS'un "Şu An Çalan" menüsü Chrome'da aynı anda açık olan videolardan s
 - **Uygulama mikseri:** Chrome, Discord, WhatsApp gibi uygulamaların sesini ayrı ayrı kıs.
 - **Mac sesi:** En üstte genel ses ve çıkış cihazı.
 - **Sekmeye git:** Videonun sekmesini tek tıkla öne getir.
-- **Güncelleme bildirimi:** Yeni sürüm çıkınca menüde görünür.
+- **Tek tıkla güncelleme:** Yeni sürüm çıkınca menüde görünür, **Güncelle**'ye basınca kendini günceller.
 - Veri toplamaz, analitik kullanmaz.
 
 ## Gereksinimler
@@ -30,14 +34,37 @@ macOS'un "Şu An Çalan" menüsü Chrome'da aynı anda açık olan videolardan s
 
 ### 1. Uygulamayı kur
 
-1. **[SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip)** dosyasını indir ve aç. Link her zaman son sürümü indirir.
-   - Repo sayfasındaki yeşil **Code › Download ZIP** butonu uygulamayı değil kaynak kodu indirir, onu kullanma.
-2. `Sound Mix.app` dosyasını **Uygulamalar** klasörüne sürükle.
-3. Uygulamayı aç. Uygulama Apple'a kayıtlı bir geliştirici sertifikasıyla imzalanmadığı için macOS ilk açılışta uyarı verir:
-   - **Sistem Ayarları › Gizlilik ve Güvenlik** bölümüne git, en altta **"Yine de Aç"** butonuna bas.
-   - Ya da Terminal'de: `xattr -dr com.apple.quarantine "/Applications/Sound Mix.app"`
+#### Kolay yol: Terminal ile kurmak
 
-Menü çubuğunda Sound Mix ikonu görünür.
+**Terminal** uygulamasını aç (Spotlight'ta "Terminal" yaz), şu satırı yapıştırıp Enter'a bas:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/omerfarukgzr/sound-mix/main/install.sh | bash
+```
+
+Komut son sürümü GitHub'dan indirir, SHA-256 özetini doğrular, Uygulamalar klasörüne kurar ve açar. macOS'un "doğrulanamadı" uyarısı çıkmaz. Aynı komut eski bir kurulumu da günceller. Ne yaptığını görmek istersen: [install.sh](install.sh)
+
+#### Terminal kullanmadan: zip ile kurmak
+
+**1-2.** **[SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip)** dosyasını indir. İndirilenler klasöründe zip'e çift tıkla, yanında `Sound Mix.app` çıkar. Onu sol taraftaki **Uygulamalar** klasörüne sürükle.
+
+<p align="center"><img src="docs/install-1-finder.svg" width="600" alt="SoundMix.zip dosyasını çift tıklayıp aç, çıkan Sound Mix.app dosyasını Uygulamalar klasörüne sürükle"></p>
+
+> Uygulamayı İndirilenler'den açma, mutlaka Uygulamalar'a taşı. Repo sayfasındaki yeşil **Code › Download ZIP** butonu da uygulamayı değil kaynak kodu indirir, onu kullanma.
+
+**3.** Uygulamalar klasöründe **Sound Mix**'e çift tıkla. Uygulama Apple'a kayıtlı ücretli bir sertifikayla imzalanmadığı için macOS ilk açılışta bu uyarıyı gösterir. **Bitti**'ye bas. "Çöp Sepeti'ne Taşı"ya basma, uygulamayı siler.
+
+<p align="center"><img src="docs/install-2-warning.svg" width="600" alt="“Sound Mix.app Açılmadı” uyarısında Bitti'ye bas"></p>
+
+**4-5.** Sol üstteki Apple menüsünden **Sistem Ayarları**'nı aç ve soldan **Gizlilik ve Güvenlik**'i seç. Sağ tarafta en alta kaydır, "Sound Mix.app engellendi" satırının yanındaki **Yine de Aç**'a bas.
+
+<p align="center"><img src="docs/install-3-settings.svg" width="600" alt="Sistem Ayarları › Gizlilik ve Güvenlik bölümünde en alta kaydırıp Yine de Aç'a bas"></p>
+
+**6.** macOS Mac parolanı ya da Touch ID'yi ister, onayla. Bir pencere daha çıkarsa orada da **Yine de Aç**'a bas.
+
+Bunu sadece ilk kurulumda yaparsın. Sonraki güncellemeler menüden tek tıkla olur ve bu uyarı bir daha çıkmaz.
+
+İki yolda da kurulum bitince menü çubuğunda Sound Mix ikonu görünür.
 
 ### 2. Chrome eklentisini yükle
 
@@ -59,7 +86,7 @@ Sound Mix günde bir kez GitHub'daki son sürüme bakar. Yeni sürüm varsa men�
 
 Chrome eklentisi yeni sürümde değiştiyse kendiliğinden yeniden yüklenir, tekrar kurman gerekmez. Değişmediyse eklentiye dokunulmaz, açık sekmeleri yenilemen de gerekmez.
 
-Uygulama yerinde güncellenemezse (örneğin Downloads'tan açıldıysa ya da klasörüne yazılamıyorsa) Releases sayfası açılır. Yeni zip'i indirip `Sound Mix.app`'i Uygulamalar klasöründeki eskisinin üzerine yazman yeterli.
+Uygulama yerinde güncellenemezse (örneğin Downloads'tan açıldıysa ya da klasörüne yazılamıyorsa) Releases sayfası açılır. O zaman kurulum komutunu tekrar çalıştırman yeterli, eskisinin yerine son sürümü kurar.
 
 Güncelleme kontrolünü **Ayarlar › Güncellemeleri denetle** ile kapatabilirsin. Kontrol hiçbir veri göndermez, sadece GitHub'dan son sürüm numarasını okur.
 

@@ -224,20 +224,16 @@ final class MenuPanelController: NSObject {
         }
     }
 
-    private func showSettings() {
+    func showSettings(page: SettingsPage? = nil) {
         closePanel()
         model.refreshExtensionLocation()
         if settingsWindow == nil {
-            let controller = NSHostingController(rootView: SettingsView(openSetup: { [weak self] in self?.showSetup() }).environmentObject(model))
-            let window = NSWindow(contentViewController: controller)
-            window.title = "Sound Mix Ayarları"
-            window.styleMask = [.titled, .closable]
-            window.isReleasedWhenClosed = false
-            window.center()
-            settingsWindow = window
+            settingsWindow = SettingsController.makeWindow(model: model, openSetup: { [weak self] in self?.showSetup() })
         }
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
+        // Pencere ekrandayken seç ki boyu da o sayfaya göre ayarlansın
+        if let page { (settingsWindow?.contentViewController as? SettingsController)?.select(page) }
     }
 }
 

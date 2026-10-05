@@ -16,6 +16,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.model = model
         controller = MenuPanelController(model: model)
         controller?.showSetupIfNeeded()
+        // Geliştirirken ayarları doğrudan açmak için: open -a "Sound Mix" --args --settings 2
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--settings") {
+            let page = args.indices.contains(i + 1) ? Int(args[i + 1]).flatMap(SettingsPage.init) : nil
+            controller?.showSettings(page: page ?? .general)
+        }
     }
 }
 

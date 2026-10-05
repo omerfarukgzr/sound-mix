@@ -34,6 +34,7 @@ final class Model: ObservableObject {
     @Published var audioPermission = AudioPermission.status
     @Published var update: AvailableUpdate? = UpdateChecker.stored
     @Published var updateStatus = UpdateStatus.idle
+    @Published var checkingUpdate = false
     /// Chrome eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
     @Published var extensionNeedsRepair = false
     /// Chrome'daki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
@@ -106,14 +107,16 @@ final class Model: ObservableObject {
 
     // MARK: Güncelleme
 
-    func checkForUpdate() {
+    func checkForUpdate(force: Bool = false) {
         guard UpdateChecker.isEnabled else {
             if update != nil { update = nil }
             return
         }
+        checkingUpdate = true
         Task {
-            let found = await UpdateChecker.checkIfDue()
+            let found = await UpdateChecker.checkIfDue(force: force)
             if found != update { update = found }
+            checkingUpdate = false
         }
     }
 

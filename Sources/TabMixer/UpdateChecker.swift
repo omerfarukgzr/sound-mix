@@ -33,10 +33,10 @@ enum UpdateChecker {
                                sha256: UserDefaults.standard.string(forKey: "latestSHA256"))
     }
 
-    /// Son kontrolün üzerinden gün geçtiyse GitHub'a sorar.
-    static func checkIfDue() async -> AvailableUpdate? {
+    /// Son kontrolün üzerinden gün geçtiyse (ya da force ile hemen) GitHub'a sorar.
+    static func checkIfDue(force: Bool = false) async -> AvailableUpdate? {
         let last = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date ?? .distantPast
-        guard isEnabled, Date().timeIntervalSince(last) >= interval else { return stored }
+        guard isEnabled, force || Date().timeIntervalSince(last) >= interval else { return stored }
 
         struct Asset: Decodable { let name: String; let browser_download_url: String; let digest: String? }
         struct Release: Decodable { let tag_name: String; let html_url: String; let assets: [Asset]? }
