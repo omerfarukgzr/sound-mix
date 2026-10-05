@@ -36,10 +36,11 @@ enum ChromeBridge {
     static var bridgePID: pid_t? {
         guard let text = try? String(contentsOfFile: Paths.bridgePID, encoding: .utf8),
               let pid = pid_t(text.trimmingCharacters(in: .whitespacesAndNewlines)), pid > 0 else { return nil }
-        var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
-        guard proc_pidpath(pid, &path, UInt32(path.count)) > 0 else { return nil }
-        // Pid başka bir sürece verilmiş olabilir
-        return String(cString: path).hasSuffix("/" + (Bundle.main.executableURL?.lastPathComponent ?? "SoundMix")) ? pid : nil
+        // Pid başka bir sürece verilmiş olabilir; sürecin adı bizim ikilimizle aynı mı diye bak.
+        // Yola bakmıyoruz: güncellemeden sonra eski köprünün ikilisi silinmiş olur ve yolu okunamaz.
+        var name = [CChar](repeating: 0, count: 2 * Int(MAXCOMLEN) + 1)
+        guard proc_name(pid, &name, UInt32(name.count)) > 0 else { return nil }
+        return String(cString: name) == (Bundle.main.executableURL?.lastPathComponent ?? "SoundMix") ? pid : nil
     }
 
     static func tabs() -> [ChromeTab] {

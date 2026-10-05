@@ -24,10 +24,8 @@ struct SetupView: View {
             HStack(spacing: 12) {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(repairing ? "Chrome eklentisini onar" : "Chrome eklentisini kur").font(.title3.weight(.semibold))
-                    Text(!repairing ? "Sound Mix'in Chrome'daki videoları görebilmesi için bir kez gerekli."
-                         : model.extensionNeedsRepair ? "Eklenti şu an geçici bir klasörden yükleniyor, macOS orayı her an temizleyebilir. Kalıcı klasörden yeniden yükleyelim."
-                         : "Chrome'daki eklenti güncel değil. Yeni sürümü yükleyelim.")
+                    Text(title).font(.title3.weight(.semibold))
+                    Text(subtitle)
                         .font(.callout).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -46,6 +44,25 @@ struct SetupView: View {
         .onChange(of: isDone) { _, finished in if finished { repairing = false } }
     }
 
+    /// Chrome'daki eklenti uygulamanın içindekinden eski; güncelleme gelmiş ama Chrome yükleyememiş.
+    private var updating: Bool { repairing && !model.extensionNeedsRepair }
+
+    private var title: String {
+        if updating { return "Chrome eklentisine güncelleme geldi" }
+        return repairing ? "Chrome eklentisini onar" : "Chrome eklentisini kur"
+    }
+
+    private var subtitle: String {
+        if updating {
+            let installed = ChromeBridge.extensionVersion().map { "Chrome'daki eklenti \($0), yeni sürüm \(Installer.bundledExtensionVersion ?? "?"). " } ?? ""
+            return installed + "Sound Mix'in düzgün çalışması için eklentiyi güncellemen gerekiyor. Kutuyu Chrome'a sürüklemen yeterli, ayarların korunur."
+        }
+        if repairing {
+            return "Eklenti şu an geçici bir klasörden yükleniyor, macOS orayı her an temizleyebilir. Kalıcı klasörden yeniden yükleyelim."
+        }
+        return "Sound Mix'in Chrome'daki videoları görebilmesi için bir kez gerekli."
+    }
+
     private var steps: some View {
         VStack(alignment: .leading, spacing: 14) {
             Step(number: 1, title: "Chrome'da eklentiler sayfasını aç") {
@@ -60,7 +77,7 @@ struct SetupView: View {
                 Step(number: 2, title: "Aşağıdaki kutuyu Chrome'daki sayfanın üzerine sürükle") {
                     VStack(alignment: .leading, spacing: 6) {
                         ExtensionDragTile(onDrop: dropped)
-                        Text("Mevcut eklentinin yerine geçer, önce kaldırman gerekmez.")
+                        Text(updating ? "Eski eklentinin yerine geçer, önce kaldırman gerekmez." : "Mevcut eklentinin yerine geçer, önce kaldırman gerekmez.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }

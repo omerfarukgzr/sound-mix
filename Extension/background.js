@@ -31,13 +31,20 @@ let retryDelay = 1000;
 // Sound Mix uygulaması kapanır, güncellenir ya da hiç kurulu değilse bağlantı kopar.
 // Hatayı okuyup (Chrome'un "işlenmemiş hata" uyarısı çıkmasın) artan aralıklarla yeniden dene.
 function connect() {
-  port = chrome.runtime.connectNative(HOST);
-  port.onMessage.addListener((msg) => {
+  const current = chrome.runtime.connectNative(HOST);
+  port = current;
+  // Bağlantı birkaç saniye ayakta kaldıysa köprü çalışıyor demektir; bir sonraki kopuşta
+  // (ör. Sound Mix güncellenince) hemen yeniden bağlansın, eski uzun bekleme süresi kalmasın
+  const healthy = setTimeout(() => {
+    if (port === current) retryDelay = 1000;
+  }, 5000);
+  current.onMessage.addListener((msg) => {
     retryDelay = 1000;
     onCommand(msg);
   });
-  port.onDisconnect.addListener(() => {
+  current.onDisconnect.addListener(() => {
     void chrome.runtime.lastError;
+    clearTimeout(healthy);
     port = null;
     setTimeout(connect, retryDelay);
     retryDelay = Math.min(retryDelay * 2, 60000);

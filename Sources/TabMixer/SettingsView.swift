@@ -200,7 +200,9 @@ struct ChromePage: View {
     var body: some View {
         Card {
             SettingRow("Chrome eklentisi", statusDetail, status: model.extensionStatus) {
-                if model.extensionNeedsAttention {
+                if model.extensionOutdated {
+                    Button("Güncelle…", action: openSetup)
+                } else if model.extensionNeedsRepair {
                     Button("Onar…", action: openSetup)
                 } else if !model.chromeConnected {
                     Button("Kur…", action: openSetup)
@@ -220,7 +222,7 @@ struct ChromePage: View {
 
     private var statusDetail: String {
         if model.extensionNeedsRepair { return "Geçici bir klasörden yükleniyor. Onar ile kalıcı klasöre taşı." }
-        if model.extensionOutdated { return "Chrome'daki eklenti uygulamayla aynı sürümde değil. Onar ile yenile." }
+        if model.extensionOutdated { return "Eklentiye güncelleme geldi. Güncelle'ye basıp kutuyu Chrome'a sürükle." }
         return model.chromeConnected ? "Chrome'a bağlı ve çalışıyor." : "Chrome'a bağlı değil. Kurulum yardımcısıyla yükle."
     }
 }
@@ -357,7 +359,7 @@ extension Model {
     var extensionStatus: PermissionStatus {
         // Geçici kopya Caches'te duruyor; macOS orayı temizleyince eklenti çalışmaz
         if extensionNeedsRepair { return .missing("Geçici klasörde") }
-        if extensionOutdated { return .missing("Güncel değil") }
+        if extensionOutdated { return .missing("Güncelleme var") }
         return chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil")
     }
 

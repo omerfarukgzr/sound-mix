@@ -28,7 +28,8 @@ final class MenuPanelController: NSObject {
 
         let content = MenuContent(
             onHeightChange: { [weak self] height in self?.fit(height: height) },
-            openSettings: { [weak self] in self?.showSettings() }
+            openSettings: { [weak self] in self?.showSettings() },
+            openSetup: { [weak self] in self?.showSetup() }
         )
         .environmentObject(model)
         hosting = NSHostingView(rootView: AnyView(content))
@@ -55,6 +56,13 @@ final class MenuPanelController: NSObject {
             .sink { [weak self] _, _, _ in self?.updateIcon() }
             .store(in: &cancellables)
         updateIcon()
+        // Yeni sürümle gelen eklenti Chrome'a kendiliğinden yüklenemediyse güncelleme penceresini
+        // bir kez kendimiz açalım; her sürüm için sadece bir kere, sonra menüdeki uyarı kalır.
+        model.$extensionOutdated
+            .removeDuplicates()
+            .filter { $0 }
+            .sink { [weak self] _ in self?.promptExtensionUpdate() }
+            .store(in: &cancellables)
     }
 
     /// macOS 26 ve sonrasında sistem menüleriyle aynı Liquid Glass. Saydamlık oranını sistem
@@ -191,11 +199,19 @@ final class MenuPanelController: NSObject {
     }
 
     func showSetupIfNeeded() {
-        // Köprü birkaç saniye içinde bağlanmazsa kurulum yardımcısını göster
+        // Köprü birkaç saniye içinde bağlanmazsa kurulum yardımcısını göster. Eklenti Chrome'a zaten
+        // kuruluysa gösterme: Chrome kapalı olabilir ya da eklenti henüz yeniden bağlanıyordur.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
-            guard let self, !self.model.chromeConnected else { return }
+            guard let self, !self.model.chromeConnected, ChromeExtension.loadedFolders().isEmpty else { return }
             self.showSetup()
         }
+    }
+
+    private func promptExtensionUpdate() {
+        guard let version = Installer.bundledExtensionVersion,
+              UserDefaults.standard.string(forKey: "extensionUpdatePrompted") != version else { return }
+        UserDefaults.standard.set(version, forKey: "extensionUpdatePrompted")
+        showSetup()
     }
 
     func showSetup() {

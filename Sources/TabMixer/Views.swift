@@ -68,6 +68,7 @@ struct MenuContent: View {
     @AppStorage("chromeCollapsed") private var chromeCollapsed = false
     var onHeightChange: (CGFloat) -> Void = { _ in }
     var openSettings: () -> Void = {}
+    var openSetup: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -84,10 +85,15 @@ struct MenuContent: View {
                 AppRow(app: app)
             }
             if model.extensionOutdated {
-                Text("Chrome eklentisi güncel değil. Ayarlar › Chrome eklentisi › Onar… ile yeniden yükle.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.orange)
-                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    Text("Chrome eklentisine güncelleme geldi.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Button("Güncelle…", action: openSetup)
+                        .buttonStyle(.link)
+                        .font(.system(size: 11))
+                }
             }
             if Installer.isTranslocated {
                 Text("Sound Mix'i Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
