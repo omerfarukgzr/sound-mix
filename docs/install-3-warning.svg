@@ -15,6 +15,14 @@
   .mark { stroke: #e5484d; fill: none; }
   .markfill { fill: #e5484d; }
   .accent { fill: #0a84ff; }
+  .sicon, .chev { stroke: #6e7781; }
+  .rowsel { fill: #0a64d8; }
+  .t1sel { fill: #ffffff; }
+  .card { fill: #f5f5f7; }
+  .field { fill: #e3e3e8; }
+  .fade { fill: url(#fadeg); }
+  .fadestop { stop-color: #ffffff; }
+  .hint { fill: #e5484d; }
   @media (prefers-color-scheme: dark) {
     .bg { fill: #0d1117; }
     .win { fill: #2a2a2d; stroke: #44464b; }
@@ -27,6 +35,12 @@
     .doc { fill: #3a3a3e; stroke: #6b6f76; }
     .mark { stroke: #ff6369; }
     .markfill { fill: #ff6369; }
+    .sicon, .chev { stroke: #c4c8ce; }
+    .rowsel { fill: #0a5bc4; }
+    .card { fill: #323235; }
+    .fadestop { stop-color: #2a2a2d; }
+    .field { fill: #3a3a3e; }
+    .hint { fill: #e5484d; }
   }
 </style>
 <rect class="bg" width="660" height="330" rx="12"/>

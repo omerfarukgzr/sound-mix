@@ -46,19 +46,27 @@ Komut son sürümü GitHub'dan indirir, SHA-256 özetini doğrular, Uygulamalar 
 
 #### Terminal kullanmadan: zip ile kurmak
 
-**1-2.** **[SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip)** dosyasını indir. İndirilenler klasöründe zip'e çift tıkla, yanında `Sound Mix.app` çıkar. Onu sol taraftaki **Uygulamalar** klasörüne sürükle.
+**1.** **[SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip)** dosyasını indir ve Finder'da **İndirilenler** klasörünü aç. Orada sadece `SoundMix.zip` vardır, ona çift tıkla. Safari kullanıyorsan zip kendiliğinden açılmış olabilir, o zaman 2. adıma geç.
 
-<p align="center"><img src="docs/install-1-finder.svg" width="600" alt="SoundMix.zip dosyasını çift tıklayıp aç, çıkan Sound Mix.app dosyasını Uygulamalar klasörüne sürükle"></p>
+<p align="center"><img src="docs/install-1-zip.svg" width="620" alt="İndirilenler klasöründe sadece SoundMix.zip var; ona çift tıkla"></p>
+
+**2.** Zip açılınca yanında `Sound Mix.app` çıkar. Onu sol taraftaki **Uygulamalar**'ın üzerine sürükleyip bırak.
+
+<p align="center"><img src="docs/install-2-drag.svg" width="620" alt="Zip açılınca çıkan Sound Mix.app dosyasını soldaki Uygulamalar'a sürükle"></p>
 
 > Uygulamayı İndirilenler'den açma, mutlaka Uygulamalar'a taşı. Repo sayfasındaki yeşil **Code › Download ZIP** butonu da uygulamayı değil kaynak kodu indirir, onu kullanma.
 
 **3.** Uygulamalar klasöründe **Sound Mix**'e çift tıkla. Uygulama Apple'a kayıtlı ücretli bir sertifikayla imzalanmadığı için macOS ilk açılışta bu uyarıyı gösterir. **Bitti**'ye bas. "Çöp Sepeti'ne Taşı"ya basma, uygulamayı siler.
 
-<p align="center"><img src="docs/install-2-warning.svg" width="600" alt="“Sound Mix.app Açılmadı” uyarısında Bitti'ye bas"></p>
+<p align="center"><img src="docs/install-3-warning.svg" width="600" alt="“Sound Mix.app Açılmadı” uyarısında Bitti'ye bas"></p>
 
-**4-5.** Sol üstteki Apple menüsünden **Sistem Ayarları**'nı aç ve soldan **Gizlilik ve Güvenlik**'i seç. Sağ tarafta en alta kaydır, "Sound Mix.app engellendi" satırının yanındaki **Yine de Aç**'a bas.
+**4.** Sol üstteki Apple menüsünden **Sistem Ayarları**'nı aç ve soldan **Gizlilik ve Güvenlik**'i seç.
 
-<p align="center"><img src="docs/install-3-settings.svg" width="600" alt="Sistem Ayarları › Gizlilik ve Güvenlik bölümünde en alta kaydırıp Yine de Aç'a bas"></p>
+<p align="center"><img src="docs/install-4-settings.svg" width="640" alt="Sistem Ayarları'nda soldan Gizlilik ve Güvenlik'i seç, sağ tarafı en alta kaydır"></p>
+
+**5.** Sağ tarafı en alta, **Güvenlik** başlığına kadar kaydır. "“Sound Mix.app”, Mac'inizi korumak için engellendi." satırının yanındaki **Yine de Aç**'a bas.
+
+<p align="center"><img src="docs/install-5-settings-bottom.svg" width="640" alt="Gizlilik ve Güvenlik sayfasının en altında, Sound Mix.app engellendi satırındaki Yine de Aç'a bas"></p>
 
 **6.** macOS Mac parolanı ya da Touch ID'yi ister, onayla. Bir pencere daha çıkarsa orada da **Yine de Aç**'a bas.
 
