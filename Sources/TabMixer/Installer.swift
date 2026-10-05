@@ -24,10 +24,16 @@ enum Installer {
             if syncStrayCopies(from: source) { extensionChanged = true }
             removeLegacyFolderIfUnused()
         }
-        if extensionChanged || appVersionChanged() {
-            // Eklenti yeni sürümü hemen yüklesin. Sadece uygulama değişse bile gerekli: Chrome'un başlattığı
-            // köprü eski ikiliyle çalışmaya devam ediyor, eklenti yeniden bağlanınca yenisi başlıyor.
+        // Her açılışta çağrılmalı ki son sürüm kaydedilsin
+        let appChanged = appVersionChanged()
+        if extensionChanged {
+            // Eklenti yeni sürümü hemen yüklesin; köprü de onunla birlikte yeni ikiliyle başlar
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { ChromeBridge.send(["cmd": "reload"]) }
+        } else if appChanged, let pid = ChromeBridge.bridgePID {
+            // Eklenti aynı, ona dokunma (yeniden yüklenirse açık sekmelerin yenilenmesi gerekir).
+            // Chrome'un başlattığı köprü ise hâlâ eski ikiliyle çalışıyor; sadece onu kapat.
+            // Eklenti bağlantı kopunca kendisi yeniden bağlanır, Chrome da yeni ikiliyi başlatır.
+            kill(pid, SIGTERM)
         }
     }
 

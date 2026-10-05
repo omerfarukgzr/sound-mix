@@ -55,12 +55,11 @@ Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kur…** ile tekrar
 
 ## Güncelleme
 
-Sound Mix günde bir kez GitHub'daki son sürüme bakar. Yeni sürüm varsa menünün en üstünde **"Yeni sürüm var"** satırı ve menü çubuğu ikonunda küçük bir nokta görünür. **İndir**'e basınca Releases sayfası açılır.
+Sound Mix günde bir kez GitHub'daki son sürüme bakar. Yeni sürüm varsa menünün en üstünde **"Yeni sürüm var"** satırı ve menü çubuğu ikonunda küçük bir nokta görünür. **Güncelle**'ye basınca yeni sürüm indirilir, SHA-256 özeti doğrulanır, eski uygulamanın yerine kurulur ve Sound Mix yeniden açılır. Ayarların korunur.
 
-1. Yeni zip'i indir, `Sound Mix.app`'i Uygulamalar klasörüne sürükleyip eskisinin üzerine yaz.
-2. Uygulamayı aç.
+Chrome eklentisi yeni sürümde değiştiyse kendiliğinden yeniden yüklenir, tekrar kurman gerekmez. Değişmediyse eklentiye dokunulmaz, açık sekmeleri yenilemen de gerekmez.
 
-Chrome eklentisi de kendiliğinden güncellenir, tekrar kurman gerekmez. Ayarların korunur.
+Uygulama yerinde güncellenemezse (örneğin Downloads'tan açıldıysa ya da klasörüne yazılamıyorsa) Releases sayfası açılır. Yeni zip'i indirip `Sound Mix.app`'i Uygulamalar klasöründeki eskisinin üzerine yazman yeterli.
 
 Güncelleme kontrolünü **Ayarlar › Güncellemeleri denetle** ile kapatabilirsin. Kontrol hiçbir veri göndermez, sadece GitHub'dan son sürüm numarasını okur.
 
@@ -134,4 +133,4 @@ Elle kaldırmak istersen:
 
 **Install:** [download SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip) (always the latest release), move `Sound Mix.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page. To uninstall, use *Settings › Sound Mix'i kaldır…*.
 
-Updates: the app checks GitHub once a day and shows a "new version" row in the menu (can be turned off in Settings); the Chrome extension updates itself together with the app. No data is collected. Requires macOS 14.4+ and Google Chrome. MIT licensed.
+Updates: the app checks GitHub once a day and shows a "new version" row in the menu (can be turned off in Settings); one click downloads, verifies and installs it, then relaunches. The Chrome extension is reloaded only if it changed. No data is collected. Requires macOS 14.4+ and Google Chrome. MIT licensed.

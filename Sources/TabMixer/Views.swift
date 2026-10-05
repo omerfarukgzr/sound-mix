@@ -298,16 +298,31 @@ struct VideoRow: View {
 
 /// Menünün en üstünde, yeni sürüm varsa.
 struct UpdateRow: View {
+    @EnvironmentObject var model: Model
     let update: AvailableUpdate
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "arrow.down.circle.fill").foregroundStyle(Color.accentColor)
-            Text("Yeni sürüm var: \(update.version)").font(.system(size: 12.5))
-            Spacer()
-            Button("İndir") { NSWorkspace.shared.open(update.url) }
-                .buttonStyle(.link)
-                .font(.system(size: 12))
+            switch model.updateStatus {
+            case .idle:
+                Text("Yeni sürüm var: \(update.version)").font(.system(size: 12.5))
+                Spacer()
+                Button("Güncelle") { model.installUpdate() }
+                    .buttonStyle(.link)
+                    .font(.system(size: 12))
+            case .installing:
+                Text("Güncelleniyor…").font(.system(size: 12.5))
+                Spacer()
+                ProgressView().controlSize(.mini)
+            case .failed:
+                Text("Güncellenemedi").font(.system(size: 12.5))
+                Spacer()
+                // Otomatik kurulum olmadıysa eski yol: Releases sayfasından elle indir
+                Button("İndir") { NSWorkspace.shared.open(update.url) }
+                    .buttonStyle(.link)
+                    .font(.system(size: 12))
+            }
         }
     }
 }

@@ -33,6 +33,7 @@ final class Model: ObservableObject {
     @Published var tapError = false
     @Published var audioPermission = AudioPermission.status
     @Published var update: AvailableUpdate? = UpdateChecker.stored
+    @Published var updateStatus = UpdateStatus.idle
     /// Chrome eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
     @Published var extensionNeedsRepair = false
     /// Chrome'daki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
@@ -113,6 +114,26 @@ final class Model: ObservableObject {
         Task {
             let found = await UpdateChecker.checkIfDue()
             if found != update { update = found }
+        }
+    }
+
+    enum UpdateStatus { case idle, installing, failed }
+
+    /// Yeni sürümü indirip kurar ve uygulamayı yeniden başlatır. Yerinde kurulamıyorsa Releases sayfasını açar.
+    func installUpdate() {
+        guard let update, updateStatus != .installing else { return }
+        guard update.download != nil, Updater.canInstall else {
+            NSWorkspace.shared.open(update.url)
+            return
+        }
+        updateStatus = .installing
+        Task {
+            do {
+                try await Task.detached { try await Updater.install(update) }.value
+                Updater.relaunch()
+            } catch {
+                updateStatus = .failed
+            }
         }
     }
 
