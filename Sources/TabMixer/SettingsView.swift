@@ -11,7 +11,7 @@ enum SettingsPage: Int, CaseIterable, Identifiable {
         switch self {
         case .general: "Genel"
         case .list: "Liste"
-        case .chrome: "Chrome"
+        case .chrome: "Tarayıcı"
         case .audio: "Ses İzni"
         case .about: "Hakkında"
         }
@@ -31,7 +31,7 @@ enum SettingsPage: Int, CaseIterable, Identifiable {
         switch self {
         case .general: "Sistem davranışı ve tüm ayar sayfaları."
         case .list: "Menüde hangi videoların ve uygulamaların görüneceği."
-        case .chrome: "Chrome'daki videoları Sound Mix'e bağlayan eklenti."
+        case .chrome: "Tarayıcıdaki videoları Sound Mix'e bağlayan eklenti."
         case .audio: "Uygulamaların sesini ayrı ayrı kısabilmek için gereken izin."
         case .about: "Sürüm, güncellemeler ve kaynak kodu."
         }
@@ -159,7 +159,7 @@ struct ListPage: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            SettingRow("Diğer uygulamaları da göster", "Kapalıyken menüde sadece Chrome ve videoları görünür.") {
+            SettingRow("Diğer uygulamaları da göster", "Kapalıyken menüde sadece tarayıcı ve videoları görünür.") {
                 Toggle("", isOn: $showOtherApps).labelsHidden()
             }
         }
@@ -199,12 +199,12 @@ struct ChromePage: View {
 
     var body: some View {
         Card {
-            SettingRow("Chrome eklentisi", statusDetail, status: model.extensionStatus) {
+            SettingRow("\(model.browser.name) eklentisi", statusDetail, status: model.extensionStatus) {
                 if model.extensionOutdated {
                     Button("Güncelle…", action: openSetup)
                 } else if model.extensionNeedsRepair {
                     Button("Onar…", action: openSetup)
-                } else if !model.chromeConnected {
+                } else if !model.browserConnected {
                     Button("Kur…", action: openSetup)
                 }
             }
@@ -216,14 +216,14 @@ struct ChromePage: View {
                     "Hangi videonun çaldığını ve sesini Sound Mix'e bildirir, menüden verdiğin komutları videoya iletir.")
             InfoRow("xmark", .red, "Sayfa içeriğini okumaz", "Şifreleri, formları ve geçmişini görmez.")
             InfoRow("info.circle", .secondary, "\"Tüm sitelerdeki verileri okuma\" uyarısı",
-                    "Videolar çoğu zaman başka sitelerin içinde (iframe) oynadığı için Chrome bu izni böyle adlandırır.")
+                    "Videolar çoğu zaman başka sitelerin içinde (iframe) oynadığı için tarayıcı bu izni böyle adlandırır.")
         }
     }
 
     private var statusDetail: String {
         if model.extensionNeedsRepair { return "Geçici bir klasörden yükleniyor. Onar ile kalıcı klasöre taşı." }
-        if model.extensionOutdated { return "Eklentiye güncelleme geldi. Güncelle'ye basıp kutuyu Chrome'a sürükle." }
-        return model.chromeConnected ? "Chrome'a bağlı ve çalışıyor." : "Chrome'a bağlı değil. Kurulum yardımcısıyla yükle."
+        if model.extensionOutdated { return "Eklentiye güncelleme geldi. Güncelle'ye basıp kutuyu \(model.browser.name) sayfasına sürükle." }
+        return model.browserConnected ? "\(model.connectedBrowsers.map(\.name).joined(separator: ", ")) ile bağlı ve çalışıyor." : "Bir tarayıcıya bağlı değil. Kurulum yardımcısıyla yükle."
     }
 }
 
@@ -273,7 +273,7 @@ struct AboutPage: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sound Mix").font(.system(size: 15, weight: .semibold))
                     Text("Sürüm \(UpdateChecker.currentVersion)").font(.system(size: 12)).foregroundStyle(.secondary)
-                    Text("Chrome videolarını ve uygulama seslerini menü çubuğundan yönet.").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text("Tarayıcı videolarını ve uygulama seslerini menü çubuğundan yönet.").font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
@@ -307,12 +307,12 @@ struct AboutPage: View {
 
         SectionLabel("Kaldır")
         Card {
-            SettingRow("Sound Mix'i kaldır", "Uygulamayı, Chrome eklentisini ve ayarlarını bu Mac'ten siler.") {
+            SettingRow("Sound Mix'i kaldır", "Uygulamayı, tarayıcı eklentisini ve ayarlarını bu Mac'ten siler.") {
                 Button("Kaldır…", role: .destructive) { confirmUninstall = true }
                     .confirmationDialog("Sound Mix kaldırılsın mı?", isPresented: $confirmUninstall) {
                         Button("Kaldır", role: .destructive) { model.uninstall() }
                     } message: {
-                        Text("Chrome eklentisi (Chrome ayrıca onay ister), Chrome köprüsü kaydı, Mac açılınca başlatma ve bütün ayarlar silinir. Kısılmış uygulama sesleri %100'e döner. Sound Mix.app çöpe taşınır ve uygulama kapanır.")
+                        Text("Tarayıcı eklentisi (tarayıcı ayrıca onay ister), köprü kaydı, Mac açılınca başlatma ve bütün ayarlar silinir. Kısılmış uygulama sesleri %100'e döner. Sound Mix.app çöpe taşınır ve uygulama kapanır.")
                     }
             }
         }
@@ -360,7 +360,7 @@ extension Model {
         // Geçici kopya Caches'te duruyor; macOS orayı temizleyince eklenti çalışmaz
         if extensionNeedsRepair { return .missing("Geçici klasörde") }
         if extensionOutdated { return .missing("Güncelleme var") }
-        return chromeConnected ? .granted("Bağlı") : .missing("Bağlı değil")
+        return browserConnected ? .granted("Bağlı") : .missing("Bağlı değil")
     }
 
     var audioStatus: PermissionStatus {

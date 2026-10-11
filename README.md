@@ -28,7 +28,7 @@ macOS'un "Şu An Çalan" menüsü Chrome'da aynı anda açık olan videolardan s
 ## Gereksinimler
 
 - macOS 14.4 veya üstü (Apple Silicon ve Intel)
-- Google Chrome
+- Google Chrome ya da Chromium tabanlı başka bir tarayıcı (Brave, Edge, Arc, Dia, Vivaldi, Opera, Chromium)
 
 ## Kurulum
 

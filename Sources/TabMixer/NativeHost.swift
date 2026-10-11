@@ -1,7 +1,8 @@
 import Foundation
 
 /// Chrome eklentisiyle stdin/stdout üzerinden konuşan native messaging köprüsü.
-/// Eklentinin gönderdiği durumu dosyaya yazar; uygulamadan soketle gelen komutları eklentiye iletir.
+/// Eklentinin gönderdiği durumu kendi dosyasına yazar; uygulamadan kendi soketiyle gelen komutları eklentiye iletir.
+/// Her tarayıcı profili ayrı bir köprü başlatır; dosyalar pid'le adlandırıldığı için birbirine karışmaz.
 enum NativeHost {
     private static let outputLock = NSLock()
     /// Chrome'un eklentiden köprüye izin verdiği en büyük mesaj 64 MB; bizim durum mesajlarımız birkaç KB.
@@ -9,21 +10,20 @@ enum NativeHost {
     private static let maxCommand = 64 * 1024
 
     static func run() -> Never {
-        try? FileManager.default.createDirectory(at: Paths.shared, withIntermediateDirectories: true,
-                                                 attributes: [.posixPermissions: 0o700])
-        try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: Paths.shared.path)
-        let owned = openSocket()
-        if let owned { Thread.detachNewThread { serveCommands(owned.fd) } }
+        for folder in [Paths.shared, Paths.bridges] {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true,
+                                                     attributes: [.posixPermissions: 0o700])
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: folder.path)
+        }
+        if let server = openSocket() { Thread.detachNewThread { serveCommands(server) } }
+        // Durum dosyası köprünün yaşadığını da gösterir; eklenti ilk durumu göndermeden önce de bağlı görünsün
+        writeState([])
 
         let input = FileHandle.standardInput
         // Run loop olmadığı için autorelease pool kendiliğinden boşalmıyor; her mesajda elle boşaltıyoruz.
         while autoreleasepool(invoking: { readMessage(from: input) }) {}
-        // Eklenti yeniden yüklenince yeni köprü soketi çoktan devralmış olabilir; o zaman onun dosyalarına dokunma
-        if let owned, socketID() == owned.id {
-            writeState([])
-            unlink(Paths.bridgePID)
-            unlink(Paths.socket)
-        }
+        unlink(Paths.bridgeSocket(getpid()))
+        unlink(Paths.bridgeState(getpid()).path)
         exit(0)
     }
 
@@ -46,7 +46,7 @@ enum NativeHost {
         var state: [String: Any] = ["tabs": tabs]
         if let version, version.count <= 32 { state["version"] = version }
         guard let data = try? JSONSerialization.data(withJSONObject: state) else { return }
-        try? data.write(to: Paths.state, options: .atomic)
+        try? data.write(to: Paths.bridgeState(getpid()), options: .atomic)
     }
 
     private static func send(_ data: Data) {
@@ -57,27 +57,18 @@ enum NativeHost {
         FileHandle.standardOutput.write(data)
     }
 
-    /// Soket dosyasının kimliği (cihaz + inode); başka bir köprü yeniden bağlarsa değişir.
-    private struct SocketID: Equatable { let dev: dev_t; let ino: ino_t }
-
-    private static func socketID() -> SocketID? {
-        var info = stat()
-        guard stat(Paths.socket, &info) == 0 else { return nil }
-        return SocketID(dev: info.st_dev, ino: info.st_ino)
-    }
-
-    /// Komut soketini açar (eskisini devralır) ve pid dosyasını yazar.
-    private static func openSocket() -> (fd: Int32, id: SocketID)? {
-        unlink(Paths.socket)
+    /// Bu köprünün komut soketini açar. Aynı pid'li çökmüş bir köprüden kalan dosya varsa silinir.
+    private static func openSocket() -> Int32? {
+        let path = Paths.bridgeSocket(getpid())
+        unlink(path)
         let server = socket(AF_UNIX, SOCK_STREAM, 0)
-        guard server >= 0, var addr = unixAddress(Paths.socket) else { return nil }
+        guard server >= 0, var addr = unixAddress(path) else { return nil }
         let bound = withUnsafePointer(to: &addr) {
             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(server, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
-        guard bound == 0, listen(server, 8) == 0, let id = socketID() else { close(server); return nil }
-        chmod(Paths.socket, 0o600)
-        try? "\(getpid())".write(toFile: Paths.bridgePID, atomically: true, encoding: .utf8)
-        return (server, id)
+        guard bound == 0, listen(server, 8) == 0 else { close(server); return nil }
+        chmod(path, 0o600)
+        return server
     }
 
     private static func serveCommands(_ server: Int32) {

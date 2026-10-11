@@ -202,7 +202,7 @@ final class MenuPanelController: NSObject {
         // Köprü birkaç saniye içinde bağlanmazsa kurulum yardımcısını göster. Eklenti Chrome'a zaten
         // kuruluysa gösterme: Chrome kapalı olabilir ya da eklenti henüz yeniden bağlanıyordur.
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
-            guard let self, !self.model.chromeConnected, ChromeExtension.loadedFolders().isEmpty else { return }
+            guard let self, !self.model.browserConnected, ChromeExtension.loadedFolders().isEmpty else { return }
             self.showSetup()
         }
     }

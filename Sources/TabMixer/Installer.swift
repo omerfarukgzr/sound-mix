@@ -1,6 +1,6 @@
 import Foundation
 
-/// İlk açılışta (ve güncellemelerde) Chrome köprüsünü kaydeder, eklentiyi kullanıcı klasörüne kopyalar.
+/// İlk açılışta (ve güncellemelerde) tarayıcı köprüsünü kaydeder, eklentiyi kullanıcı klasörüne kopyalar.
 enum Installer {
     static let hostName = "io.github.omerfarukgzr.tabmixer"
     static let extensionID = "hjdkncghobmcamdopbkbjonaebigjdcp"
@@ -8,7 +8,7 @@ enum Installer {
     /// O yol kaybolacağı için köprü kaydı yazılmaz; arayüz bu durumda uygulamayı taşıması için uyarabilir.
     static let isTranslocated = Bundle.main.bundlePath.contains("/AppTranslocation/")
 
-    /// Uygulamanın içindeki eklentinin sürümü; Chrome'daki eklenti bununla karşılaştırılır.
+    /// Uygulamanın içindeki eklentinin sürümü; tarayıcıdaki eklenti bununla karşılaştırılır.
     static let bundledExtensionVersion: String? = {
         guard let url = Bundle.main.url(forResource: "Extension", withExtension: nil)?.appendingPathComponent("manifest.json"),
               let data = try? Data(contentsOf: url),
@@ -17,7 +17,7 @@ enum Installer {
     }()
 
     static func run() {
-        installNativeHost()
+        registerNativeHost()
         var extensionChanged = false
         if let source = Bundle.main.url(forResource: "Extension", withExtension: nil) {
             extensionChanged = copyExtension(from: source)
@@ -28,12 +28,13 @@ enum Installer {
         let appChanged = appVersionChanged()
         if extensionChanged {
             // Eklenti yeni sürümü hemen yüklesin; köprü de onunla birlikte yeni ikiliyle başlar
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { ChromeBridge.send(["cmd": "reload"]) }
-        } else if appChanged, let pid = ChromeBridge.bridgePID {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { ChromeBridge.sendAll(["cmd": "reload"]) }
+        } else if appChanged {
             // Eklenti aynı, ona dokunma (yeniden yüklenirse açık sekmelerin yenilenmesi gerekir).
-            // Chrome'un başlattığı köprü ise hâlâ eski ikiliyle çalışıyor; sadece onu kapat.
-            // Eklenti bağlantı kopunca kendisi yeniden bağlanır, Chrome da yeni ikiliyi başlatır.
-            kill(pid, SIGTERM)
+            // Tarayıcıların başlattığı köprüler ise hâlâ eski ikiliyle çalışıyor; sadece onları kapat.
+            // Eklenti bağlantı kopunca kendisi yeniden bağlanır, tarayıcı da yeni ikiliyi başlatır.
+            let pids = ChromeBridge.sessions().map(\.pid) + [ChromeBridge.legacyBridgePID].compactMap { $0 }
+            for pid in pids { kill(pid, SIGTERM) }
         }
     }
 
@@ -45,9 +46,11 @@ enum Installer {
         return last != nil && last != current
     }
 
-    private static var nativeHostManifest: URL { Paths.nativeHostsFolder.appendingPathComponent("\(hostName).json") }
+    private static var manifestName: String { "\(hostName).json" }
 
-    private static func installNativeHost() {
+    /// Köprü kaydını kurulu ya da kullanılmış her Chromium tarayıcısının klasörüne yazar; Chrome'a her zaman.
+    /// Kurulum penceresi açılınca da çağrılır ki sonradan kurulan tarayıcılar uygulamayı yeniden başlatmadan bağlanabilsin.
+    static func registerNativeHost() {
         guard !isTranslocated, let executable = Bundle.main.executablePath else { return }
         let manifest: [String: Any] = [
             "name": hostName,
@@ -57,10 +60,14 @@ enum Installer {
             "allowed_origins": ["chrome-extension://\(extensionID)/"],
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys]) else { return }
-        let url = nativeHostManifest
-        if (try? Data(contentsOf: url)) == data { return }
-        try? FileManager.default.createDirectory(at: Paths.nativeHostsFolder, withIntermediateDirectories: true)
-        try? data.write(to: url, options: .atomic)
+        for browser in Browser.all where browser == .chrome || browser.isPresent {
+            for folder in browser.hostURLs {
+                let url = folder.appendingPathComponent(manifestName)
+                if (try? Data(contentsOf: url)) == data { continue }
+                try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                try? data.write(to: url, options: .atomic)
+            }
+        }
     }
 
     /// Paketteki eklentiyi kalıcı klasöre kopyalar. Sürüm değiştiyse true döner.
@@ -69,7 +76,7 @@ enum Installer {
         return replace(Paths.extensionFolder, with: source) && existed
     }
 
-    /// Chrome eklentiyi kalıcı klasör yerine başka bir yerden (eski bir sürüklemenin geçici kopyası gibi)
+    /// Tarayıcı eklentiyi kalıcı klasör yerine başka bir yerden (eski bir sürüklemenin geçici kopyası gibi)
     /// yüklüyorsa o kopyayı da günceller; yoksa her "reload" eski sürümü yeniden yükler.
     /// Güvenlik için sadece ev klasöründeki ve aynı eklenti anahtarını taşıyan klasörlere yazılır.
     private static func syncStrayCopies(from source: URL) -> Bool {
@@ -109,10 +116,10 @@ enum Installer {
         return json["key"] as? String
     }
 
-    /// Kaldırırken uygulamanın yazdığı dosyaları siler. Chrome'un yüklediği geçici kopyalara dokunmaz.
+    /// Kaldırırken uygulamanın yazdığı dosyaları siler. Tarayıcının yüklediği geçici kopyalara dokunmaz.
     static func removeFiles() {
         let fm = FileManager.default
-        try? fm.removeItem(at: nativeHostManifest)
+        for folder in Browser.all.flatMap(\.hostURLs) { try? fm.removeItem(at: folder.appendingPathComponent(manifestName)) }
         try? fm.removeItem(at: Paths.extensionFolder.deletingLastPathComponent())
         try? fm.removeItem(at: Paths.legacyExtensionFolder.deletingLastPathComponent())
         try? fm.removeItem(at: Paths.shared)

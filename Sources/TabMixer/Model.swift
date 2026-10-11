@@ -6,7 +6,6 @@ import ServiceManagement
 
 @MainActor
 final class Model: ObservableObject {
-    static let chromeID = "com.google.Chrome"
     /// Duraklatılan video ve sessizleşen uygulamaların listede kalma süresi (Ayarlar'dan).
     var recentWindow: TimeInterval {
         let minutes = UserDefaults.standard.object(forKey: "recentMinutes") as? Int ?? 10
@@ -24,10 +23,15 @@ final class Model: ObservableObject {
     @Published var systemVolume: Double = 0
     @Published var systemVolumeAvailable = false
     @Published var outputName = ""
+    /// Bütün tarayıcılardaki videolar; her biri hangi köprüden geldiğini bilir.
     @Published var tabs: [ChromeTab] = []
-    @Published var chromeConnected = false
-    /// Eklenti yeniden yüklenince değişir; kurulum yardımcısı yüklemeyi Chrome'un geç yazılan tercihlerini beklemeden buradan anlar.
-    @Published var bridgePID: pid_t?
+    /// Yaşayan köprüler ve onları başlatan tarayıcılar. Eklenti yeniden yüklenince köprü yeni bir pid'le gelir;
+    /// kurulum yardımcısı yüklemeyi tarayıcının geç yazılan tercihlerini beklemeden buradan anlar.
+    @Published var bridgeBrowsers: [pid_t: Browser] = [:]
+    /// Kurulum ve ayar metinlerinde adı geçen tarayıcı: bağlı ilk tarayıcı, yoksa son bağlanan ya da kurulu ilk tarayıcı.
+    @Published var browser = Browser.preferred
+    /// Uygulamanın içindekinden farklı sürümde çalışan eklentinin sürümü (varsa).
+    @Published var staleExtensionVersion: String?
     @Published var apps: [AudioApp] = []
     @Published var appGains: [String: Double] = [:]
     @Published var tapError = false
@@ -35,9 +39,9 @@ final class Model: ObservableObject {
     @Published var update: AvailableUpdate? = UpdateChecker.stored
     @Published var updateStatus = UpdateStatus.idle
     @Published var checkingUpdate = false
-    /// Chrome eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
+    /// Tarayıcı eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
     @Published var extensionNeedsRepair = false
-    /// Chrome'daki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
+    /// Tarayıcıdaki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
     @Published var extensionOutdated = false
     private var versionMismatchSince: Date?
 
@@ -46,7 +50,7 @@ final class Model: ObservableObject {
 
     private var taps: [String: AppVolumeTap] = [:]
     private var lastHeard: [String: Date] = [:]
-    private var localVideoVolume: [Int: (value: Double, at: Date)] = [:]
+    private var localVideoVolume: [String: (value: Double, at: Date)] = [:]
     private var timer: Timer?
     private var updateTimer: Timer?
     private var slowTick = 0
@@ -80,14 +84,12 @@ final class Model: ObservableObject {
 
     func refresh(full: Bool) {
         let now = Date()
-        let newTabs = ChromeBridge.tabs().filter { $0.playing || now.timeIntervalSince($0.lastActiveDate) < recentWindow }
-        if newTabs != tabs { tabs = newTabs }
+        let sessions = ChromeBridge.sessions()
+        let newTabs = sessions.flatMap(\.tabs).filter { $0.playing || now.timeIntervalSince($0.lastActiveDate) < recentWindow }
         // @Published değerleri yalnızca değişince ata; yoksa her saniye arayüz yeniden çizilir
-        let pid = ChromeBridge.bridgePID
-        if pid != bridgePID { bridgePID = pid }
-        let connected = pid != nil
-        if connected != chromeConnected { chromeConnected = connected }
-        checkExtensionVersion(connected: connected, now: now)
+        if newTabs != tabs { tabs = newTabs }
+        updateBridges(sessions)
+        checkExtensionVersion(sessions, now: now)
 
         let available: Bool
         if let volume = SystemVolume.volume {
@@ -140,14 +142,33 @@ final class Model: ObservableObject {
         }
     }
 
-    // MARK: Chrome eklentisi
+    // MARK: Tarayıcı eklentisi
 
-    /// Chrome'un tercih dosyalarını okur; açılışta ve Ayarlar ya da kurulum penceresi açıkken çağrılır.
+    var browserConnected: Bool { !bridgeBrowsers.isEmpty }
+    var bridgePIDs: Set<pid_t> { Set(bridgeBrowsers.keys) }
+
+    /// Yeni köprülerin tarayıcısını bir kez bulur (süreç ağacına bakmak her saniye yapılmasın).
+    private func updateBridges(_ sessions: [BridgeSession]) {
+        var fresh: [pid_t: Browser] = [:]
+        for session in sessions {
+            fresh[session.pid] = bridgeBrowsers[session.pid] ?? Browser.owning(pid: session.pid) ?? browser
+        }
+        guard fresh != bridgeBrowsers else { return }
+        bridgeBrowsers = fresh
+        if let first = connectedBrowsers.first {
+            if first != browser { browser = first }
+            UserDefaults.standard.set(first.bundleID, forKey: "lastBrowser")
+        }
+    }
+
     /// Güncellemeden sonra eklentinin yeniden yüklenmesi birkaç saniye sürer; uyuşmazlık
     /// 10 saniyeden uzun sürerse eklentinin güncellenemediğini varsay.
-    private func checkExtensionVersion(connected: Bool, now: Date) {
+    private func checkExtensionVersion(_ sessions: [BridgeSession], now: Date) {
         let bundled = Installer.bundledExtensionVersion
-        let mismatch = connected && bundled != nil && ChromeBridge.extensionVersion() != bundled
+        let stale = bundled == nil ? nil : sessions.first { $0.version != bundled }
+        let mismatch = stale != nil
+        let version = stale?.version
+        if version != staleExtensionVersion { staleExtensionVersion = version }
         if mismatch {
             if versionMismatchSince == nil { versionMismatchSince = now }
         } else {
@@ -158,6 +179,7 @@ final class Model: ObservableObject {
     }
 
     func refreshExtensionLocation() {
+        Installer.registerNativeHost()
         let repair = ChromeExtension.loadedFromTemporaryCopy
         if repair != extensionNeedsRepair { extensionNeedsRepair = repair }
     }
@@ -175,31 +197,47 @@ final class Model: ObservableObject {
         SystemVolume.set(value)
     }
 
-    // MARK: Chrome videoları
+    // MARK: Tarayıcı videoları
 
-    var playingTabs: [ChromeTab] { tabs.filter(\.playing) }
-    var pausedTabs: [ChromeTab] { tabs.filter { !$0.playing }.sorted { $0.lastActive > $1.lastActive } }
+    /// Eklentisi bağlı tarayıcılar, listedeki sırayla. İki Chrome profili tek tarayıcı sayılır.
+    var connectedBrowsers: [Browser] {
+        let present = Set(bridgeBrowsers.values.map(\.bundleID))
+        return Browser.all.filter { present.contains($0.bundleID) }
+    }
+
+    /// Menüde satırı olan tarayıcılar; hiçbiri bağlı değilse kurulum notuyla birlikte varsayılan tarayıcı.
+    var shownBrowsers: [Browser] {
+        let connected = connectedBrowsers
+        return connected.isEmpty ? [browser] : connected
+    }
+
+    func tabs(of browser: Browser) -> [ChromeTab] { tabs.filter { bridgeBrowsers[$0.bridge] == browser } }
+    func playingTabs(of browser: Browser) -> [ChromeTab] { tabs(of: browser).filter(\.playing) }
+    func pausedTabs(of browser: Browser) -> [ChromeTab] {
+        tabs(of: browser).filter { !$0.playing }.sorted { $0.lastActive > $1.lastActive }
+    }
 
     func videoVolume(_ tab: ChromeTab) -> Double {
-        if let local = localVideoVolume[tab.tabId], Date().timeIntervalSince(local.at) < 2 { return local.value }
+        if let local = localVideoVolume[tab.id], Date().timeIntervalSince(local.at) < 2 { return local.value }
         return tab.volume ?? 1
     }
 
     func setVideoVolume(_ tab: ChromeTab, _ value: Double) {
-        localVideoVolume[tab.tabId] = (value, Date())
+        localVideoVolume[tab.id] = (value, Date())
         objectWillChange.send()
         ChromeBridge.setVolume(tab, value)
     }
 
     // MARK: Uygulama sesleri
 
-    /// Gösterilecek uygulamalar: Chrome her zaman en üstte, diğerleri çalıyorsa,
+    /// Gösterilecek uygulamalar: tarayıcılar her zaman en üstte, diğerleri çalıyorsa,
     /// Ayarlar'daki süre içinde ses çıkardıysa ya da sesi kısılmışsa.
     var visibleApps: [AudioApp] {
         guard showOtherApps else { return [] }
         let now = Date()
+        let browsers = Set(shownBrowsers.map(\.bundleID))
         let others = apps.filter { app in
-            app.bundleID != Self.chromeID && (
+            !browsers.contains(app.bundleID) && (
                 app.isPlaying
                     || now.timeIntervalSince(lastHeard[app.bundleID] ?? .distantPast) < recentWindow
                     || gain(app.bundleID) < 1
@@ -208,14 +246,8 @@ final class Model: ObservableObject {
         return others
     }
 
-    var chromeApp: AudioApp? { apps.first { $0.bundleID == Self.chromeID } }
-
-    var chromeIcon: NSImage {
-        if let app = chromeApp { return app.icon }
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: Self.chromeID) {
-            return NSWorkspace.shared.icon(forFile: url.path)
-        }
-        return NSImage(systemSymbolName: "globe", accessibilityDescription: nil)!
+    func icon(of browser: Browser) -> NSImage {
+        apps.first { $0.bundleID == browser.bundleID }?.icon ?? browser.icon
     }
 
     func gain(_ bundleID: String) -> Double { appGains[bundleID] ?? 1 }
@@ -292,9 +324,9 @@ final class Model: ObservableObject {
 
     // MARK: Kaldırma
 
-    /// Sound Mix'i bu Mac'ten kaldırır: Chrome eklentisi, köprü kaydı, girişte başlatma, ayarlar ve uygulamanın kendisi.
+    /// Sound Mix'i bu Mac'ten kaldırır: tarayıcı eklentisi, köprü kaydı, girişte başlatma, ayarlar ve uygulamanın kendisi.
     func uninstall() {
-        // Komut köprü hâlâ ayaktayken gitsin; Chrome ayrıca kendi onayını sorar
+        // Komut köprü hâlâ ayaktayken gitsin; tarayıcı ayrıca kendi onayını sorar
         ChromeBridge.uninstallExtension()
         try? SMAppService.mainApp.unregister()
         resetGains() // kısılmış uygulamaların sesi geri gelsin

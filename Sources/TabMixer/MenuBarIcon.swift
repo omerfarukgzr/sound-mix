@@ -1,7 +1,7 @@
 import AppKit
 
 /// Menü çubuğu ikonu: uygulama ikonundaki üç sürgünün tek renkli hali.
-/// Bir şey çalarken tutamaklar dolu, çalmıyorken içi boş. Yeni sürüm varsa sağ üstte nokta.
+/// Bir şey çalarken tutamaklar dolu, çalmıyorken içi boş. Yeni sürüm varsa sağ altta indirme rozeti.
 enum MenuBarIcon {
     static func image(active: Bool, badge: Bool = false) -> NSImage {
         let image = NSImage(size: NSSize(width: 18, height: 18), flipped: true) { _ in
@@ -15,7 +15,8 @@ enum MenuBarIcon {
                 NSColor.black.setStroke()
                 track.stroke()
             }
-            for row in rows {
+            // Rozet varken alttaki sürgünün tutamağı yerine rozet durur; yarım tutamak görünmesin
+            for row in badge ? Array(rows.dropLast()) : rows {
                 let r: CGFloat = 2.0
                 let knobRect = NSRect(x: row.knob - r, y: row.y - r, width: 2 * r, height: 2 * r)
                 // Tutamağın etrafındaki çizgiyi sil, sürgü "kesik" görünsün
@@ -31,14 +32,37 @@ enum MenuBarIcon {
                     knob.stroke()
                 }
             }
-            if badge {
-                NSColor.black.set()
-                NSBezierPath(ovalIn: NSRect(x: 14, y: 0, width: 4, height: 4)).fill()
-            }
+            if badge { drawDownloadBadge() }
             return true
         }
         image.isTemplate = true
-        image.accessibilityDescription = "Sound Mix"
+        image.accessibilityDescription = badge ? "Sound Mix, yeni sürüm var" : "Sound Mix"
         return image
+    }
+
+    /// Sağ alt köşede içi oyuk aşağı oklu dolu daire. Çevresi silinir ki sürgülerden ayrı dursun.
+    private static func drawDownloadBadge() {
+        let circle = NSRect(x: 10.5, y: 10.5, width: 7.5, height: 7.5)
+        let context = NSGraphicsContext.current
+        context?.compositingOperation = .clear
+        NSBezierPath(ovalIn: circle.insetBy(dx: -1.1, dy: -1.1)).fill()
+        context?.compositingOperation = .sourceOver
+        NSColor.black.set()
+        NSBezierPath(ovalIn: circle).fill()
+
+        // Ok saydam kalsın: menü çubuğu rengine göre ters renkte görünür
+        let x = circle.midX
+        let arrow = NSBezierPath()
+        arrow.move(to: NSPoint(x: x, y: circle.minY + 1.8))
+        arrow.line(to: NSPoint(x: x, y: circle.maxY - 1.8))
+        arrow.move(to: NSPoint(x: x - 1.8, y: circle.maxY - 3.6))
+        arrow.line(to: NSPoint(x: x, y: circle.maxY - 1.8))
+        arrow.line(to: NSPoint(x: x + 1.8, y: circle.maxY - 3.6))
+        arrow.lineWidth = 1.1
+        arrow.lineCapStyle = .round
+        arrow.lineJoinStyle = .round
+        context?.compositingOperation = .clear
+        arrow.stroke()
+        context?.compositingOperation = .sourceOver
     }
 }

@@ -65,7 +65,8 @@ struct SectionHeader: View {
 
 struct MenuContent: View {
     @EnvironmentObject var model: Model
-    @AppStorage("chromeCollapsed") private var chromeCollapsed = false
+    /// Videoları gizlenen tarayıcıların bundle ID'leri, virgülle ayrılmış.
+    @AppStorage("collapsedBrowsers") private var collapsedBrowsers = ""
     var onHeightChange: (CGFloat) -> Void = { _ in }
     var openSettings: () -> Void = {}
     var openSetup: () -> Void = {}
@@ -79,14 +80,16 @@ struct MenuContent: View {
             systemSection
             Divider().padding(.vertical, 2)
             SectionHeader(title: "Uygulamalar")
-            chromeRow
-            if !chromeCollapsed { chromeVideos }
+            ForEach(model.shownBrowsers) { browser in
+                browserRow(browser)
+                if !isCollapsed(browser) { browserVideos(browser) }
+            }
             ForEach(model.visibleApps) { app in
                 AppRow(app: app)
             }
             if model.extensionOutdated {
                 HStack(spacing: 6) {
-                    Text("Chrome eklentisine güncelleme geldi.")
+                    Text("\(model.browser.name) eklentisine güncelleme geldi.")
                         .font(.system(size: 11))
                         .foregroundStyle(.orange)
                     Spacer()
@@ -96,7 +99,7 @@ struct MenuContent: View {
                 }
             }
             if Installer.isTranslocated {
-                Text("Sound Mix'i Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan Chrome'a bağlanamaz.")
+                Text("Sound Mix'i Uygulamalar klasörüne taşıyıp yeniden aç. Bu konumdan tarayıcıya bağlanamaz.")
                     .font(.system(size: 11))
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
@@ -138,52 +141,67 @@ struct MenuContent: View {
         }
     }
 
-    private var chromeRow: some View {
-        HStack(spacing: 6) {
+    private func isCollapsed(_ browser: Browser) -> Bool {
+        collapsedBrowsers.split(separator: ",").contains { $0 == browser.bundleID }
+    }
+
+    private func toggleCollapsed(_ browser: Browser) {
+        var ids = collapsedBrowsers.split(separator: ",").map(String.init)
+        if let index = ids.firstIndex(of: browser.bundleID) { ids.remove(at: index) } else { ids.append(browser.bundleID) }
+        collapsedBrowsers = ids.joined(separator: ",")
+    }
+
+    private func browserRow(_ browser: Browser) -> some View {
+        let collapsed = isCollapsed(browser)
+        let tabs = model.tabs(of: browser)
+        let playing = tabs.filter(\.playing).count
+        return HStack(spacing: 6) {
             Button {
-                chromeCollapsed.toggle()
+                toggleCollapsed(browser)
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 10, weight: .semibold))
-                    .rotationEffect(.degrees(chromeCollapsed ? 0 : 90))
+                    .rotationEffect(.degrees(collapsed ? 0 : 90))
                     .frame(width: 16, height: 20)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(chromeCollapsed ? "Chrome videolarını göster" : "Chrome videolarını gizle")
+            .accessibilityLabel(collapsed ? "\(browser.name) videolarını göster" : "\(browser.name) videolarını gizle")
 
-            Image(nsImage: model.chromeIcon).resizable().frame(width: 16, height: 16)
+            Image(nsImage: model.icon(of: browser)).resizable().frame(width: 16, height: 16)
             HStack(spacing: 4) {
-                Text("Chrome")
-                if chromeCollapsed && !model.tabs.isEmpty {
-                    Text(model.playingTabs.isEmpty ? "· \(model.tabs.count) video" : "· \(model.playingTabs.count) çalıyor")
+                Text(browser.name)
+                if collapsed && !tabs.isEmpty {
+                    Text(playing == 0 ? "· \(tabs.count) video" : "· \(playing) çalıyor")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                 }
             }
             .frame(width: 118, alignment: .leading)
             .lineLimit(1)
-            VolumeSlider(value: model.gain(Model.chromeID), onChange: { model.setGain(Model.chromeID, $0) }, label: "Chrome ses seviyesi")
-            Percent(value: model.gain(Model.chromeID))
+            VolumeSlider(value: model.gain(browser.bundleID), onChange: { model.setGain(browser.bundleID, $0) }, label: "\(browser.name) ses seviyesi")
+            Percent(value: model.gain(browser.bundleID))
         }
         .font(.system(size: 13))
     }
 
-    private var chromeVideos: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if !model.chromeConnected {
-                Text("Chrome kapalı veya Sound Mix eklentisi yüklü değil. Kurulum için Ayarlar'a bak.")
+    private func browserVideos(_ browser: Browser) -> some View {
+        let playing = model.playingTabs(of: browser)
+        let paused = model.pausedTabs(of: browser)
+        return VStack(alignment: .leading, spacing: 4) {
+            if !model.browserConnected {
+                Text("\(browser.name) kapalı veya Sound Mix eklentisi yüklü değil. Kurulum için Ayarlar'a bak.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
-            } else if model.tabs.isEmpty {
+            } else if playing.isEmpty && paused.isEmpty {
                 Text("Son \(model.recentWindowText) oynatılan video yok.")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             } else {
-                if !model.playingTabs.isEmpty {
+                if !playing.isEmpty {
                     SectionHeader(title: "Çalıyor")
-                    ForEach(model.playingTabs) { VideoRow(tab: $0) }
+                    ForEach(playing) { VideoRow(tab: $0) }
                 }
-                if !model.pausedTabs.isEmpty {
+                if !paused.isEmpty {
                     SectionHeader(title: "Duraklatıldı").padding(.top, 2)
-                    ForEach(model.pausedTabs) { VideoRow(tab: $0) }
+                    ForEach(paused) { VideoRow(tab: $0) }
                 }
             }
         }
