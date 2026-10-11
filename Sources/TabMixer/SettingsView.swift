@@ -414,11 +414,11 @@ struct UpdateCard: View {
     /// "Bugün 11:29", "Dün 09:10", "Yarın 11:29", yoksa "8 Ekim 14:05".
     private static func day(_ date: Date, now: Date) -> String {
         let calendar = Calendar.current
-        let time = date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(locale))
+        let time = date.formatted(Date.FormatStyle().hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).locale(locale))
         if calendar.isDate(date, inSameDayAs: now) { return "Bugün \(time)" }
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) { return "Dün \(time)" }
         if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) { return "Yarın \(time)" }
-        return date.formatted(Date.FormatStyle().day().month(.wide).hour().minute().locale(locale))
+        return date.formatted(Date.FormatStyle().day().month(.wide).locale(locale)) + " " + time
     }
 }
 
