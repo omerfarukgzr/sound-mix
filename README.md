@@ -84,19 +84,19 @@ Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir:
 
 Eklenti bağlanınca yardımcı "Hazır!" der. Açık video sekmelerini bir kez yenile.
 
-Yardımcıyı sonradan **Ayarlar… › Chrome eklentisi › Kur…** ile tekrar açabilirsin. Eklentide bir sorun olursa (güncel değilse ya da yanlış klasörden yükleniyorsa) menüde uyarı, aynı yerde de **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer. Önce kaldırman gerekmez.
+Yardımcıyı sonradan **Ayarlar… › Tarayıcı › Kur…** ile tekrar açabilirsin. Eklentide bir sorun olursa (güncel değilse ya da yanlış klasörden yükleniyorsa) menüde uyarı, aynı yerde de **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer. Önce kaldırman gerekmez.
 
 > Chrome açılışta ara sıra "geliştirici modundaki eklentileri devre dışı bırak" diye hatırlatma gösterebilir. Bunu kapatman yeterli, eklenti çalışmaya devam eder.
 
 ## Güncelleme
 
-Sound Mix günde bir kez GitHub'daki son sürüme bakar. Yeni sürüm varsa menünün en üstünde **"Yeni sürüm var"** satırı ve menü çubuğu ikonunda küçük bir nokta görünür. **Güncelle**'ye basınca yeni sürüm indirilir, SHA-256 özeti doğrulanır, eski uygulamanın yerine kurulur ve Sound Mix yeniden açılır. Ayarların korunur.
+Sound Mix 4 saatte bir GitHub'daki son sürüme bakar. Menüyü açtığında da son denetimden 1 saat geçtiyse bakar. Yeni sürüm varsa menünün en üstünde **"Yeni sürüm var"** satırı ve menü çubuğu ikonunun sağ altında indirme rozeti görünür. **Güncelle**'ye basınca yeni sürüm indirilir, SHA-256 özeti doğrulanır, eski uygulamanın yerine kurulur ve Sound Mix yeniden açılır. Ayarların korunur.
 
 Chrome eklentisi yeni sürümde değiştiyse kendiliğinden yeniden yüklenir, tekrar kurman gerekmez. Değişmediyse eklentiye dokunulmaz, açık sekmeleri yenilemen de gerekmez.
 
 Uygulama yerinde güncellenemezse (örneğin Downloads'tan açıldıysa ya da klasörüne yazılamıyorsa) Releases sayfası açılır. O zaman kurulum komutunu tekrar çalıştırman yeterli, eskisinin yerine son sürümü kurar.
 
-Güncelleme kontrolünü **Ayarlar › Güncellemeleri denetle** ile kapatabilirsin. Kontrol hiçbir veri göndermez, sadece GitHub'dan son sürüm numarasını okur.
+**Ayarlar › Genel › Güncellemeler**'de son denetimin ve bir sonrakinin ne zaman olduğunu görürsün. Otomatik denetimi oradan kapatabilir ya da **Şimdi denetle** ile hemen yaptırabilirsin. Kontrol hiçbir veri göndermez, sadece GitHub'dan son sürüm numarasını okur.
 
 ## İzinler ve gizlilik
 
@@ -168,4 +168,4 @@ Elle kaldırmak istersen:
 
 **Install:** [download SoundMix.zip](https://github.com/omerfarukgzr/sound-mix/releases/latest/download/SoundMix.zip) (always the latest release), move `Sound Mix.app` to Applications, and open it (the app is not notarized: use *System Settings › Privacy & Security › Open Anyway*). On first launch a setup assistant opens `chrome://extensions`; enable *Developer mode* and drag the extension tile from the assistant onto the page. To uninstall, use *Settings › Sound Mix'i kaldır…*.
 
-Updates: the app checks GitHub once a day and shows a "new version" row in the menu (can be turned off in Settings); one click downloads, verifies and installs it, then relaunches. The Chrome extension is reloaded only if it changed. No data is collected. Requires macOS 14.4+ and Google Chrome. MIT licensed.
+Updates: the app checks GitHub every 4 hours and when the menu opens and shows a "new version" row in the menu (can be turned off in Settings); one click downloads, verifies and installs it, then relaunches. The Chrome extension is reloaded only if it changed. No data is collected. Requires macOS 14.4+ and Google Chrome or another Chromium-based browser (Brave, Edge, Arc, Dia, Vivaldi, Opera). MIT licensed.
