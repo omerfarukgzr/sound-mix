@@ -117,6 +117,8 @@ final class MenuPanelController: NSObject {
               let screen = (buttonWindow.screen ?? NSScreen.main)?.visibleFrame else { return }
         model.panelOpen = true
         model.refresh(full: true)
+        // Son denetimden 1 saat geçtiyse sessizce sor; yeni sürüm menüde hemen görünsün
+        model.checkForUpdate(after: UpdateChecker.menuInterval)
         let height = max(hosting.fittingSize.height, contentHeight, 80)
         let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
         var x = buttonRect.minX

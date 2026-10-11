@@ -39,6 +39,10 @@ final class Model: ObservableObject {
     @Published var update: AvailableUpdate? = UpdateChecker.stored
     @Published var updateStatus = UpdateStatus.idle
     @Published var checkingUpdate = false
+    /// GitHub'a son başarılı soru; Ayarlar'da "Son denetim" olarak görünür.
+    @Published var lastUpdateCheck = UpdateChecker.lastCheck
+    /// Elle başlatılan son denetim GitHub'a ulaşamadı.
+    @Published var updateCheckFailed = false
     /// Tarayıcı eklentiyi kalıcı klasör yerine geçici bir kopyadan yüklüyor; Ayarlar onarım önerir.
     @Published var extensionNeedsRepair = false
     /// Tarayıcıdaki eklenti uygulamanın içindekiyle aynı sürümde değil (güncelleme yüklenememiş).
@@ -64,7 +68,7 @@ final class Model: ObservableObject {
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
-        // Açılıştan biraz sonra, sonra saatte bir "gün doldu mu" diye bak
+        // Açılıştan biraz sonra, sonra saatte bir "4 saat doldu mu" diye bak
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in self?.checkForUpdate() }
         updateTimer = Timer.scheduledTimer(withTimeInterval: 60 * 60, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.checkForUpdate() }
@@ -109,15 +113,22 @@ final class Model: ObservableObject {
 
     // MARK: Güncelleme
 
-    func checkForUpdate(force: Bool = false) {
+    func checkForUpdate(force: Bool = false, after: TimeInterval = UpdateChecker.interval) {
         guard UpdateChecker.isEnabled else {
             if update != nil { update = nil }
             return
         }
+        // Menü açılışı ile saatlik tur aynı anda gelirse GitHub'a iki kez sorma
+        guard !checkingUpdate else { return }
         checkingUpdate = true
+        let before = UpdateChecker.lastCheck
         Task {
-            let found = await UpdateChecker.checkIfDue(force: force)
+            let found = await UpdateChecker.checkIfDue(force: force, after: after)
             if found != update { update = found }
+            let after = UpdateChecker.lastCheck
+            if after != lastUpdateCheck { lastUpdateCheck = after }
+            // Sadece elle denetimde hata göster; zamanı gelmemiş otomatik denetim de tarih değiştirmez
+            if force { updateCheckFailed = after == before } else if after != before { updateCheckFailed = false }
             checkingUpdate = false
         }
     }

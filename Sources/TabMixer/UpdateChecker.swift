@@ -11,17 +11,29 @@ struct AvailableUpdate: Equatable {
     let sha256: String?
 }
 
-/// Günde bir kez GitHub'daki son sürüme bakar. Hiçbir veri göndermez; ağ yoksa ya da
+/// 4 saatte bir GitHub'daki son sürüme bakar. Açılıştan 10 sn sonra ve sonra saatte bir "4 saat doldu mu" diye
+/// bakılır; menü açılınca da son denetimden 1 saat geçtiyse sorulur. Yeni sürüm en geç ~5 saatte görünür.
+/// GitHub'ın kimliksiz sınırı saatte 60 istek, bunun çok altında kalır. Hiçbir veri göndermez; ağ yoksa ya da
 /// GitHub hata verirse sessizce geçer. Taslak ve ön sürümler /releases/latest'te zaten yer almaz.
 enum UpdateChecker {
     private static let endpoint = URL(string: "https://api.github.com/repos/omerfarukgzr/sound-mix/releases/latest")!
-    static let interval: TimeInterval = 24 * 60 * 60
+    static let interval: TimeInterval = 4 * 60 * 60
+    /// Menü açılınca denetim için son denetimin üzerinden geçmesi gereken süre.
+    static let menuInterval: TimeInterval = 60 * 60
 
     static var currentVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
     static var isEnabled: Bool { UserDefaults.standard.object(forKey: "checkUpdates") as? Bool ?? true }
+
+    /// GitHub'a son başarılı soru.
+    static var lastCheck: Date? { UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date }
+    /// Son denetimde GitHub'da görülen sürüm (bu sürümden yeni olmasa da).
+    static var latestKnownVersion: String? { UserDefaults.standard.string(forKey: "latestVersion") }
+    static var releaseNotesURL: URL {
+        URL(string: "https://github.com/omerfarukgzr/sound-mix/releases/tag/v\(currentVersion)")!
+    }
 
     /// Son kontrolde bulunan, şu anki sürümden yeni sürüm (yeniden açılışta da gösterilsin diye saklanır).
     static var stored: AvailableUpdate? {
@@ -33,10 +45,10 @@ enum UpdateChecker {
                                sha256: UserDefaults.standard.string(forKey: "latestSHA256"))
     }
 
-    /// Son kontrolün üzerinden gün geçtiyse (ya da force ile hemen) GitHub'a sorar.
-    static func checkIfDue(force: Bool = false) async -> AvailableUpdate? {
-        let last = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date ?? .distantPast
-        guard isEnabled, force || Date().timeIntervalSince(last) >= interval else { return stored }
+    /// Son kontrolün üzerinden `after` kadar süre geçtiyse (ya da force ile hemen) GitHub'a sorar.
+    static func checkIfDue(force: Bool = false, after: TimeInterval = interval) async -> AvailableUpdate? {
+        let last = lastCheck ?? .distantPast
+        guard isEnabled, force || Date().timeIntervalSince(last) >= after else { return stored }
 
         struct Asset: Decodable { let name: String; let browser_download_url: String; let digest: String? }
         struct Release: Decodable { let tag_name: String; let html_url: String; let assets: [Asset]? }

@@ -29,11 +29,11 @@ enum SettingsPage: Int, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .general: "Sistem davranışı ve tüm ayar sayfaları."
+        case .general: "Sistem davranışı, güncellemeler ve tüm ayar sayfaları."
         case .list: "Menüde hangi videoların ve uygulamaların görüneceği."
         case .chrome: "Tarayıcıdaki videoları Sound Mix'e bağlayan eklenti."
         case .audio: "Uygulamaların sesini ayrı ayrı kısabilmek için gereken izin."
-        case .about: "Sürüm, güncellemeler ve kaynak kodu."
+        case .about: "Sürüm, kaynak kodu ve kaldırma."
         }
     }
 }
@@ -128,12 +128,15 @@ struct GeneralPage: View {
             }
         }
 
+        SectionLabel("Güncellemeler")
+        UpdateCard()
+
         SectionLabel("Menü")
         Card {
             NavRow(.list, "Duraklatılan videolar ve diğer uygulamalar", value: RecentChoice.label(recentMinutes), select: select)
             NavRow(.chrome, "Eklenti durumu ve gizlilik", value: model.extensionStatus.text, select: select)
             NavRow(.audio, "Sistem Sesi Kaydı izni", value: model.audioStatus.text, select: select)
-            NavRow(.about, "Sürüm ve güncellemeler", value: UpdateChecker.currentVersion, select: select)
+            NavRow(.about, "Sürüm, kaynak kodu ve kaldırma", value: UpdateChecker.currentVersion, select: select)
         }
     }
 }
@@ -263,7 +266,6 @@ struct AudioPage: View {
 
 struct AboutPage: View {
     @EnvironmentObject var model: Model
-    @AppStorage("checkUpdates") private var checkUpdates = true
     @State private var confirmUninstall = false
 
     var body: some View {
@@ -278,25 +280,6 @@ struct AboutPage: View {
                 Spacer()
             }
             .padding(14)
-        }
-
-        SectionLabel("Güncellemeler")
-        Card {
-            SettingRow("Güncellemeleri denetle", "Günde bir kez GitHub'daki son sürüme bakar, hiçbir veri göndermez.") {
-                Toggle("", isOn: $checkUpdates).labelsHidden()
-                    .onChange(of: checkUpdates) { model.checkForUpdate() }
-            }
-            SettingRow(updateTitle, lastCheckText) {
-                if let update = model.update {
-                    Button(model.updateStatus == .installing ? "Güncelleniyor…" : "\(update.version) sürümüne güncelle") {
-                        model.installUpdate()
-                    }
-                    .disabled(model.updateStatus == .installing)
-                } else {
-                    Button(model.checkingUpdate ? "Denetleniyor…" : "Şimdi denetle") { model.checkForUpdate(force: true) }
-                        .disabled(model.checkingUpdate || !checkUpdates)
-                }
-            }
         }
 
         SectionLabel("Kaynak")
@@ -317,15 +300,125 @@ struct AboutPage: View {
             }
         }
     }
+}
 
-    private var updateTitle: String {
-        if model.updateStatus == .failed { return "Güncellenemedi" }
-        return model.update.map { "Yeni sürüm var: \($0.version)" } ?? "Güncel"
+/// Genel sayfasındaki güncelleme kartı: durum, son ve sonraki denetim, otomatik denetim anahtarı, sürüm notları.
+struct UpdateCard: View {
+    @EnvironmentObject var model: Model
+    @AppStorage("checkUpdates") private var checkUpdates = true
+
+    var body: some View {
+        Card {
+            status
+            // "3 dk önce" gibi yazılar pencere açıkken de güncel kalsın
+            TimelineView(.periodic(from: .now, by: 30)) { context in
+                HStack(alignment: .top, spacing: 0) {
+                    stat("Son denetim", last(now: context.date))
+                    Divider().frame(height: 34)
+                    stat("Sonraki denetim", next(now: context.date))
+                }
+                .padding(.vertical, 10)
+            }
+            SettingRow("Otomatik denetle", "Açılışta, 4 saatte bir ve menüyü açtığında GitHub'daki son sürüme bakar. Hiçbir veri göndermez.") {
+                Toggle("", isOn: $checkUpdates).labelsHidden()
+                    .onChange(of: checkUpdates) { model.checkForUpdate() }
+            }
+            LinkRow("Sürüm notları", "\(UpdateChecker.currentVersion) sürümünde neler değişti", url: UpdateChecker.releaseNotesURL.absoluteString)
+        }
     }
 
-    private var lastCheckText: String {
-        guard let date = UserDefaults.standard.object(forKey: "lastUpdateCheck") as? Date else { return "Henüz denetlenmedi." }
-        return "Son denetim: \(date.formatted(.relative(presentation: .named)))"
+    private var status: some View {
+        HStack(spacing: 12) {
+            Image(systemName: symbol)
+                .font(.system(size: 26))
+                .foregroundStyle(tint)
+                .frame(width: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.system(size: 13.5, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 11.5)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            if let update = model.update {
+                Button(model.updateStatus == .installing ? "Güncelleniyor…" : "Güncelle") { model.installUpdate() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(model.updateStatus == .installing)
+                    .help("\(update.version) sürümünü indirip kurar ve Sound Mix'i yeniden başlatır")
+            } else {
+                Button(model.checkingUpdate ? "Denetleniyor…" : "Şimdi denetle") { model.checkForUpdate(force: true) }
+                    .disabled(model.checkingUpdate || !checkUpdates)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+    }
+
+    private var symbol: String {
+        if model.updateStatus == .failed || model.updateCheckFailed { return "exclamationmark.triangle.fill" }
+        if model.update != nil { return "arrow.down.circle.fill" }
+        return checkUpdates ? "checkmark.seal.fill" : "pause.circle.fill"
+    }
+
+    private var tint: Color {
+        if model.updateStatus == .failed || model.updateCheckFailed { return .orange }
+        if model.update != nil { return .accentColor }
+        return checkUpdates ? .green : .secondary
+    }
+
+    private var title: String {
+        if model.updateStatus == .failed { return "Güncelleme kurulamadı" }
+        if let update = model.update { return "Yeni sürüm var: \(update.version)" }
+        if model.updateCheckFailed { return "GitHub'a ulaşılamadı" }
+        return model.lastUpdateCheck == nil ? "Henüz denetlenmedi" : "Sound Mix güncel"
+    }
+
+    private var detail: String {
+        let current = "Kullandığın sürüm \(UpdateChecker.currentVersion)."
+        if model.updateStatus == .failed { return current + " İndirip elle kurmak için Releases sayfasını aç." }
+        if model.update != nil { return current + " Güncelle'ye basınca indirilir, doğrulanır ve kurulur." }
+        if model.updateCheckFailed { return current + " İnternet bağlantını kontrol edip tekrar dene." }
+        if let latest = UpdateChecker.latestKnownVersion, model.lastUpdateCheck != nil {
+            return current + " GitHub'daki son sürüm \(latest)."
+        }
+        return current
+    }
+
+    private func stat(_ label: String, _ value: (main: String, sub: String)) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(value.main).font(.system(size: 13, weight: .medium))
+            Text(value.sub).font(.system(size: 11)).foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 14)
+    }
+
+    private func last(now: Date) -> (main: String, sub: String) {
+        guard let date = model.lastUpdateCheck else { return ("Hiç", "Henüz GitHub'a sorulmadı") }
+        return (Self.day(date, now: now), date.formatted(.relative(presentation: .named, unitsStyle: .wide).locale(Self.locale)))
+    }
+
+    /// Denetim, son denetimin üzerinden 4 saat geçtikten sonraki ilk saatlik turda yapılır;
+    /// 1 saat geçtiyse menü açılınca da yapılır.
+    private func next(now: Date) -> (main: String, sub: String) {
+        guard checkUpdates else { return ("Kapalı", "Otomatik denetim kapalı") }
+        guard let last = model.lastUpdateCheck else { return ("Birazdan", "Açılıştan kısa süre sonra") }
+        let due = last.addingTimeInterval(UpdateChecker.interval)
+        guard due > now else { return ("Birazdan", "Bir saat içinde") }
+        return (Self.day(due, now: now), "civarı ya da menüyü açınca")
+    }
+
+    private static let locale = Locale(identifier: "tr_TR")
+
+    /// "Bugün 11:29", "Dün 09:10", "Yarın 11:29", yoksa "8 Ekim 14:05".
+    private static func day(_ date: Date, now: Date) -> String {
+        let calendar = Calendar.current
+        let time = date.formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(locale))
+        if calendar.isDate(date, inSameDayAs: now) { return "Bugün \(time)" }
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) { return "Dün \(time)" }
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) { return "Yarın \(time)" }
+        return date.formatted(Date.FormatStyle().day().month(.wide).hour().minute().locale(locale))
     }
 }
 

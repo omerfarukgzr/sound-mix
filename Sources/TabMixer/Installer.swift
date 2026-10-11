@@ -36,6 +36,15 @@ enum Installer {
             let pids = ChromeBridge.sessions().map(\.pid) + [ChromeBridge.legacyBridgePID].compactMap { $0 }
             for pid in pids { kill(pid, SIGTERM) }
         }
+        removeLegacyBridgeFiles()
+    }
+
+    /// 1.2.x köprüsünün tek soketli dosyaları; o köprü artık çalışmıyorsa silinir.
+    private static func removeLegacyBridgeFiles() {
+        guard ChromeBridge.legacyBridgePID == nil else { return }
+        for path in [Paths.legacySocket, Paths.legacyBridgePID, Paths.shared.appendingPathComponent("state.json").path] {
+            unlink(path)
+        }
     }
 
     /// Uygulama son açılıştan beri güncellendiyse true döner.
