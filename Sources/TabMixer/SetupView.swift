@@ -17,7 +17,10 @@ struct SetupView: View {
         return !model.bridgePIDs.subtracting(before).isEmpty
     }
 
-    private var isDone: Bool { model.browserConnected && (!model.extensionNeedsAttention || reloadedAfterDrop) }
+    /// Seçili tarayıcıya bakılır; başka bir tarayıcı bağlı diye yeni kurulum "hazır" sayılmaz.
+    private var isDone: Bool {
+        model.connectedBrowsers.contains(model.browser) && (!model.extensionNeedsAttention || reloadedAfterDrop)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -37,6 +40,7 @@ struct SetupView: View {
                 steps
             }
         }
+        .textSelection(.enabled)
         .padding(24)
         .frame(width: 460)
         .onAppear { if model.extensionNeedsAttention { repairing = true } }
@@ -67,17 +71,21 @@ struct SetupView: View {
     private var steps: some View {
         VStack(alignment: .leading, spacing: 14) {
             Step(number: 1, title: "\(model.browser.name) içinde eklentiler sayfasını aç") {
-                Button {
-                    openExtensionsPage()
-                } label: {
-                    Label("Eklentiler sayfasını aç", systemImage: "arrow.up.forward.app")
+                HStack(spacing: 10) {
+                    Button {
+                        openExtensionsPage()
+                    } label: {
+                        Label("Eklentiler sayfasını aç", systemImage: "arrow.up.forward.app")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    browserPicker
                 }
-                .buttonStyle(.borderedProminent)
             }
             if repairing {
                 Step(number: 2, title: "Aşağıdaki kutuyu \(model.browser.name) içindeki sayfanın üzerine sürükle") {
                     VStack(alignment: .leading, spacing: 6) {
                         ExtensionDragTile(onDrop: dropped)
+                        LoadUnpackedHelp()
                         Text(updating ? "Eski eklentinin yerine geçer, önce kaldırman gerekmez." : "Mevcut eklentinin yerine geçer, önce kaldırman gerekmez.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
@@ -85,7 +93,10 @@ struct SetupView: View {
             } else {
                 Step(number: 2, title: "Sağ üstteki \"Geliştirici modu\" anahtarını aç") { EmptyView() }
                 Step(number: 3, title: "Aşağıdaki kutuyu \(model.browser.name) içindeki sayfanın üzerine sürükle") {
-                    ExtensionDragTile(onDrop: dropped)
+                    VStack(alignment: .leading, spacing: 8) {
+                        ExtensionDragTile(onDrop: dropped)
+                        LoadUnpackedHelp()
+                    }
                 }
             }
 
@@ -96,6 +107,25 @@ struct SetupView: View {
                      : "Eklenti yükleniyor…")
                     .font(.footnote).foregroundStyle(.secondary)
             }
+        }
+    }
+
+    /// Birden fazla tarayıcı kuruluysa hangisine kurulacağı seçilir; varsayılan seçim Browser.preferred.
+    @ViewBuilder private var browserPicker: some View {
+        let choices = Browser.installed
+        if choices.count > 1 {
+            Picker("Tarayıcı", selection: $model.browser) {
+                ForEach(choices) { browser in
+                    Label {
+                        Text(model.connectedBrowsers.contains(browser) ? "\(browser.name) (bağlı)" : browser.name)
+                    } icon: {
+                        Image(nsImage: browser.icon.resized(to: 16))
+                    }
+                    .tag(browser)
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
         }
     }
 
@@ -110,7 +140,14 @@ struct SetupView: View {
                 .font(.headline)
             Text("Açık video sekmelerini bir kez yenile. Videolar menü çubuğundaki Sound Mix ikonunda görünecek.")
                 .font(.callout).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack {
+                if !model.unconnectedBrowsers.isEmpty {
+                    Button("Başka bir tarayıcıya da kur") {
+                        droppedWithBridges = nil
+                        model.selectBrowserToAdd()
+                    }
+                }
                 Spacer()
                 Button("Kapat", action: onDone).keyboardShortcut(.defaultAction)
             }
@@ -120,6 +157,15 @@ struct SetupView: View {
     private func openExtensionsPage() {
         guard let app = model.browser.appURL, let url = URL(string: model.browser.extensionsPage) else { return }
         NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration())
+    }
+}
+
+private extension NSImage {
+    /// Menüdeki ikonlar asıl boyutunda (512 pt) çizilmesin
+    func resized(to side: CGFloat) -> NSImage {
+        let copy = self.copy() as! NSImage
+        copy.size = NSSize(width: side, height: side)
+        return copy
     }
 }
 
@@ -139,6 +185,36 @@ private struct Step<Content: View>: View {
                 content
             }
         }
+    }
+}
+
+/// Sürükleme işe yaramazsa: tarayıcının "Paketlenmemiş öğe yükle" butonuyla klasörü elle seçmek.
+/// Dosya penceresinde ⌘⇧G ile kopyalanan yol yapıştırılır.
+private struct LoadUnpackedHelp: View {
+    @State private var copied = false
+
+    var body: some View {
+        DisclosureGroup("Sürükleyince olmadı mı?") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sayfadaki \"Paketlenmemiş öğe yükle\" butonuna bas. Açılan pencerede ⌘⇧G'ye bas, aşağıdaki yolu yapıştırıp Enter'a, sonra Seç'e bas.")
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    Text(Paths.extensionFolder.path)
+                        .font(.system(.caption, design: .monospaced))
+                        .lineLimit(1).truncationMode(.middle)
+                    Spacer(minLength: 0)
+                    Button(copied ? "Kopyalandı" : "Yolu kopyala") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(Paths.extensionFolder.path, forType: .string)
+                        copied = true
+                    }
+                    .controlSize(.small)
+                }
+            }
+            .font(.caption).foregroundStyle(.secondary)
+            .padding(.top, 4)
+        }
+        .font(.caption)
     }
 }
 

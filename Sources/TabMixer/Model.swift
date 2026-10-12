@@ -165,11 +165,29 @@ final class Model: ObservableObject {
             fresh[session.pid] = bridgeBrowsers[session.pid] ?? Browser.owning(pid: session.pid) ?? browser
         }
         guard fresh != bridgeBrowsers else { return }
+        let added = Set(fresh.values).subtracting(bridgeBrowsers.values)
         bridgeBrowsers = fresh
-        if let first = connectedBrowsers.first {
-            if first != browser { browser = first }
-            UserDefaults.standard.set(first.bundleID, forKey: "lastBrowser")
+        // Yeni bağlanan tarayıcı (az önce kurulan) öne geçer; seçili tarayıcı hâlâ bağlıysa değişmez
+        let connected = connectedBrowsers
+        if let next = connected.first(where: added.contains) ?? (connected.contains(browser) ? nil : connected.first) {
+            if next != browser { browser = next }
+            UserDefaults.standard.set(next.bundleID, forKey: "lastBrowser")
         }
+    }
+
+    /// Kurulu ama eklentisi bağlı olmayan tarayıcılar; varsayılan ve açık olanlar önce.
+    var unconnectedBrowsers: [Browser] {
+        let connected = Set(connectedBrowsers)
+        let running = Set(NSWorkspace.shared.runningApplications.compactMap(\.bundleIdentifier))
+        let systemDefault = Browser.systemDefault
+        func rank(_ browser: Browser) -> Int { browser == systemDefault ? 0 : running.contains(browser.bundleID) ? 1 : 2 }
+        return Browser.installed.filter { !connected.contains($0) }
+            .enumerated().sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }.map(\.element)
+    }
+
+    /// Kurulum yardımcısını bağlı olmayan bir tarayıcı için hazırlar.
+    func selectBrowserToAdd() {
+        if let next = unconnectedBrowsers.first, next != browser { browser = next }
     }
 
     /// Güncellemeden sonra eklentinin yeniden yüklenmesi birkaç saniye sürer; uyuşmazlık
@@ -180,6 +198,8 @@ final class Model: ObservableObject {
         let mismatch = stale != nil
         let version = stale?.version
         if version != staleExtensionVersion { staleExtensionVersion = version }
+        // Güncelleme metni eski eklentinin durduğu tarayıcının adını söylesin
+        if let stale, let owner = bridgeBrowsers[stale.pid], owner != browser { browser = owner }
         if mismatch {
             if versionMismatchSince == nil { versionMismatchSince = now }
         } else {

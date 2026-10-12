@@ -202,13 +202,21 @@ struct ChromePage: View {
 
     var body: some View {
         Card {
-            SettingRow("\(model.browser.name) eklentisi", statusDetail, status: model.extensionStatus) {
+            SettingRow(model.browserConnected ? "Tarayıcı eklentisi" : "\(model.browser.name) eklentisi", statusDetail, status: model.extensionStatus) {
                 if model.extensionOutdated {
                     Button("Güncelle…", action: openSetup)
                 } else if model.extensionNeedsRepair {
                     Button("Onar…", action: openSetup)
                 } else if !model.browserConnected {
                     Button("Kur…", action: openSetup)
+                }
+            }
+            if model.browserConnected, !model.unconnectedBrowsers.isEmpty {
+                SettingRow("Başka bir tarayıcı", "\(model.unconnectedBrowsers.map(\.name).joined(separator: ", ")) kurulu ama eklenti yok. Videoları her tarayıcı için ayrı listelenir.") {
+                    Button("Kur…") {
+                        model.selectBrowserToAdd()
+                        openSetup()
+                    }
                 }
             }
         }

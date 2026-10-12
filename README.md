@@ -74,15 +74,17 @@ Bunu sadece ilk kurulumda yaparsın. Sonraki güncellemeler menüden tek tıkla 
 
 İki yolda da kurulum bitince menü çubuğunda Sound Mix ikonu görünür.
 
-### 2. Chrome eklentisini yükle
+### 2. Tarayıcı eklentisini yükle
 
-Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir:
+Uygulama ilk açılışta bir **kurulum yardımcısı** gösterir. Yardımcı varsayılan tarayıcını seçer (Chromium tabanlı değilse açık ya da kurulu olan ilk Chromium tarayıcıyı). Birden fazla tarayıcın varsa butonun yanındaki listeden başkasını seçebilirsin.
 
-1. **"Eklentiler sayfasını aç"** butonuna bas. Chrome'da eklentiler sayfası açılır.
-2. Chrome'da sağ üstteki **Geliştirici modu** anahtarını aç.
-3. Yardımcıdaki **"Beni Chrome'a sürükle"** kutusunu Chrome'daki sayfanın üzerine sürükleyip bırak.
+1. **"Eklentiler sayfasını aç"** butonuna bas. Seçili tarayıcıda eklentiler sayfası açılır.
+2. Sayfada **Geliştirici modu** anahtarını aç.
+3. Yardımcıdaki **"Beni tarayıcıya sürükle"** kutusunu o sayfanın üzerine sürükleyip bırak.
 
 Eklenti bağlanınca yardımcı "Hazır!" der. Açık video sekmelerini bir kez yenile.
+
+Birden fazla tarayıcı kullanıyorsan eklentiyi her birine ayrı kurarsın. Yardımcı "Hazır!" dedikten sonra **Başka bir tarayıcıya da kur**'a bas ya da sonradan **Ayarlar… › Tarayıcı › Başka bir tarayıcı › Kur…** yolunu kullan. Menüde her tarayıcının videoları kendi satırının altında listelenir.
 
 Yardımcıyı sonradan **Ayarlar… › Tarayıcı › Kur…** ile tekrar açabilirsin. Eklentide bir sorun olursa (güncel değilse ya da yanlış klasörden yükleniyorsa) menüde uyarı, aynı yerde de **Onar…** butonu çıkar. Kutuyu tekrar sürüklemen yeterli, yeni eklenti eskisinin yerine geçer. Önce kaldırman gerekmez.
 
